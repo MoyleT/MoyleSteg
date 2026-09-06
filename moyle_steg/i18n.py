@@ -22,7 +22,7 @@ TEXT = {
     'result_details_toggle': ('技术详情', 'Technical details'),
     'input_unverified': ('已更换输入文件，当前文件尚未验证。', 'The input changed. The current file has not been verified.'),
     'input_changed_ready': ('已更换输入，请重新执行任务。', 'The input changed. Run the task again.'),
-    'preflight_order': ('先检查容量，再设置口令或密钥；容量检查无需凭据。', 'Check capacity before setting a password or key; this check needs no credentials.'),
+    'preflight_order': ('容量检查无需口令或密钥，已输入的口令会保留。', 'Capacity checks need no password or key and keep any password already entered.'),
     'appearance': ('外观主题', 'Appearance'),
     'fruit_accent': ('草莓与樱桃装饰', 'Strawberry and cherry decoration'),
     'appearance_tip': ('切换主题，立即生效并记住选择。', 'Change the appearance instantly. Your choice is remembered.'),
@@ -32,15 +32,25 @@ TEXT = {
     'reduce_motion': ('减少动效', 'Reduce motion'),
     'reduce_motion_tip': ('关闭页面淡入、悬停与进度装饰动画。实际操作进度仍正常显示。', 'Turn off page, hover and decorative progress animations. Measured task progress remains visible.'),
     'nav_workspace': ('创作空间', 'WORKSPACE'),
-    'capacity_short': ('原始容量不含格式与加密开销。', 'Raw capacity excludes format and encryption overhead.'),
+    'capacity_short': ('PNG 按像素计容量；GIF 按成品字节预算检查。', 'PNG capacity uses pixels; GIF uses an output byte budget.'),
+    'gif_preview': ('GIF 首帧预览 · {dimensions}\n保持动画，无需像素扩容\n秘密文件：{payload}', 'GIF first-frame preview · {dimensions}\nAnimation preserved; no pixel resizing\nSecret file: {payload}'),
+    'gif_preflight': ('GIF · {frames} 帧 · {width} × {height}\n预计成品：{size} · 原动画保持不变', 'GIF · {frames} frames · {width} × {height}\nPlanned output: {size} · Original animation preserved'),
+    'gif_note': ('GIF 使用标准扩展块存储密文，不是像素隐写；可被文件分析识别，重编码可能删除它。认证保护隐藏文件，不认证动画本身。请按文件发送。', 'GIF stores ciphertext in a standard application extension, not pixels. File analysis can identify it and re-encoding can remove it. Authentication protects the hidden file, not the animation. Send as a file.'),
+    'frame_count': ('动画帧数', 'Animation frames'),
+    'output_bytes': ('成品文件大小', 'Output file size'),
+    'GIF application extension': ('GIF 标准扩展块', 'GIF application extension'),
     'stage_derive': ('派生加密密钥', 'Deriving encryption keys'),
     'stage_decompress': ('验证并解压内容', 'Validating and decompressing content'),
     'stage_preflight': ('检查容量与资源', 'Checking capacity and resources'),
+    'stage_read_gif': ('读取 GIF 容器', 'Reading the GIF container'),
+    'stage_gif_frames': ('检查 GIF 动画帧', 'Validating GIF animation frames'),
+    'stage_embed_gif': ('写入 GIF 加密扩展', 'Writing the GIF encrypted extension'),
+    'reason_container': ('成品超过容器字节预算，请减少秘密文件大小或使用独立 SAES。', 'The output exceeds the container byte budget. Use a smaller secret or standalone SAES.'),
     'verify': ('验证文件', 'Verify a file'),
     'verify_title': ('验证加密文件与摘要', 'Verify an encrypted file'),
-    'verify_desc': ('自动识别 PNG 或 SAES，通过临时容器副本验证凭据与完整性，不输出解密文件。', 'Detect PNG or SAES and verify credentials and integrity using a temporary container copy. No decrypted file is written.'),
-    'verify_input': ('待验证的 PNG / SAES', 'PNG / SAES to verify'),
-    'verify_filter': ('加密容器 (*.png *.saes);;所有文件 (*)', 'Encrypted containers (*.png *.saes);;All files (*)'),
+    'verify_desc': ('自动识别 PNG、GIF 或 SAES，通过临时容器副本验证隐藏内容，不输出解密文件。', 'Detect PNG, GIF or SAES and verify the hidden content using a temporary container copy. No decrypted file is written.'),
+    'verify_input': ('待验证的 PNG / GIF / SAES', 'PNG / GIF / SAES to verify'),
+    'verify_filter': ('加密容器 (*.png *.gif *.saes);;所有文件 (*)', 'Encrypted containers (*.png *.gif *.saes);;All files (*)'),
     'run_verify': ('验证完整性', 'Verify integrity'),
     'verify_success': ('验证通过，文件完整', 'Verification passed; content is intact'),
     'verify_note': ('两项摘要基于本次读取的同一份数据：原始文件摘要对应解密内容，完整输入摘要对应整个容器。源文件仍可能被其他程序更改。', 'Both checksums come from the same captured data: the original-file checksum identifies decrypted content; the input-file checksum identifies the whole container. Other programs may still change the source file.'),
@@ -98,7 +108,7 @@ TEXT = {
     'crypt': ('文件加解密', 'File encryption'), 'keygen': ('密钥工具', 'Key tools'),
     'guide': ('使用指南', 'User guide'),
     'hide_title': ('把秘密藏进一张图片', 'Hide a secret in an image'),
-    'hide_desc': ('选择载体与文件，用 AES-256-GCM 加密后写入 PNG 像素。', 'Choose a cover and a file. Encrypt with AES-256-GCM, then embed in PNG pixels.'),
+    'hide_desc': ('AES-256-GCM 加密后藏入 PNG 像素或 GIF 扩展块，GIF 保持动画。', 'Encrypt with AES-256-GCM, then embed in PNG pixels or a GIF extension. GIF animation is preserved.'),
     'extract_title': ('从图片中找回文件', 'Recover a file from an image'),
     'extract_desc': ('使用原口令或密钥验证加密内容，并恢复到指定位置。', 'Use the original password or key to verify the content and recover your file.'),
     'crypt_title': ('为文件加一把锁', 'Protect a file with encryption'),
@@ -112,9 +122,9 @@ TEXT = {
     'output_card': ('03  保存结果', '03  Save the result'),
     'key_card': ('密钥文件', 'Key file'),
     'cover': ('载体图片', 'Cover image'), 'payload': ('秘密文件', 'Secret file'),
-    'stego_input': ('包含隐藏内容的 PNG', 'PNG containing hidden content'),
+    'stego_input': ('包含隐藏内容的 PNG / GIF', 'PNG / GIF containing hidden content'),
     'input': ('输入文件', 'Input file'), 'output': ('输出文件', 'Output file'),
-    'output_png': ('输出 PNG', 'Output PNG'), 'output_key': ('保存密钥到', 'Save key as'),
+    'output_png': ('输出 PNG / GIF', 'Output PNG / GIF'), 'output_key': ('保存密钥到', 'Save key as'),
     'browse': ('浏览…', 'Browse…'), 'path_hint': ('选择文件，或拖入此处', 'Choose a file, or drop it here'),
     'save_hint': ('选择明确的保存位置', 'Choose a destination'),
     'restore_original_name': ('按原文件名和格式恢复（推荐）', 'Restore original filename and format (recommended)'),
@@ -128,7 +138,7 @@ TEXT = {
     'password_hint': ('输入口令（不会保存）', 'Enter password (never saved)'),
     'confirm_hint': ('再次输入相同口令', 'Enter the same password again'),
     'key_hint': ('请妥善保存密钥。遗失后无法恢复文件；不要和隐藏图片一起发送。', 'Keep the key safe. A lost key cannot be recovered. Send it separately from the image.'),
-    'credential_hint': ('请记住口令或保管好密钥。完成任务后，界面将清除口令。', 'Remember your password or keep your key safe. Password fields clear when the job finishes.'),
+    'credential_hint': ('请记住口令或保管好密钥。失败或取消后保留口令供重试；成功后清除本页口令，关闭窗口时全部清除。', 'Keep your password or key safe. Failed or cancelled jobs keep passwords for retry; success clears this page, and closing clears every page.'),
     'resize': ('容量不足时自动扩容图片', 'Resize the image automatically if needed'),
     'fill': ('扩容后的最高占用率', 'Maximum fill after resizing'),
     'fill_tip': ('更低的占用率会生成更大的图片，仅在需要扩容时应用。', 'A lower fill creates a larger image. Applies only when resizing is needed.'),
@@ -145,7 +155,7 @@ TEXT = {
     'preview_limited': ('图片过大，已跳过预览；仍可在后台处理。', 'Preview skipped for a large image. Processing is still available.'),
     'dimensions': ('图片尺寸', 'Image dimensions'), 'capacity_label': ('RGB-LSB 原始容量', 'Raw RGB-LSB capacity'),
     'payload_size': ('秘密文件大小', 'Secret file size'),
-    'capacity_note': ('容量为像素可用字节数，实际还需格式与加密开销；压缩后的大小以处理结果为准。', 'Raw pixel capacity excludes format and encryption overhead. Compressed size is determined during processing.'),
+    'capacity_note': ('PNG 容量按像素计算，需扣除格式与加密开销；GIF 预检显示包含扩展块的成品字节数，不做像素扩容。', 'PNG pixel capacity excludes format and encryption overhead. GIF preflight reports complete output bytes including its extension; GIF is not resized.'),
     'transport_note': ('传输时请选择“原图”或“文件”。图片压缩、裁剪或重新保存可能破坏隐藏内容。', 'Share as an original image or a file. Compression, cropping, or re-saving may destroy hidden content.'),
     'ready': ('就绪 · 文件仅在本机处理', 'Ready · All files stay on this device'),
     'working': ('正在处理… 已用时 {seconds} 秒', 'Processing… {seconds}s elapsed'),
@@ -175,23 +185,23 @@ TEXT = {
     'capacity': ('可用容量', 'Capacity'), 'fill_ratio': ('占用率', 'Fill ratio'),
     'credential_mode': ('保护方式', 'Protection'), 'algorithm': ('加密算法', 'Encryption algorithm'),
     'verified': ('验证通过', 'Verified'), 'yes': ('是', 'Yes'), 'no': ('否', 'No'),
-    'images_filter': ('图片 (*.png *.jpg *.jpeg *.bmp *.webp *.tif *.tiff);;所有文件 (*)', 'Images (*.png *.jpg *.jpeg *.bmp *.webp *.tif *.tiff);;All files (*)'),
-    'png_filter': ('PNG 图片 (*.png);;所有文件 (*)', 'PNG images (*.png);;All files (*)'),
+    'images_filter': ('图片 (*.png *.gif *.jpg *.jpeg *.bmp *.webp *.tif *.tiff);;所有文件 (*)', 'Images (*.png *.gif *.jpg *.jpeg *.bmp *.webp *.tif *.tiff);;All files (*)'),
+    'png_filter': ('PNG / GIF 图片 (*.png *.gif);;所有文件 (*)', 'PNG / GIF images (*.png *.gif);;All files (*)'),
     'all_filter': ('所有文件 (*)', 'All files (*)'),
     'key_filter': ('隐写密钥 (*.stegkey);;所有文件 (*)', 'Steganography keys (*.stegkey);;All files (*)'),
     'encrypted_filter': ('加密文件 (*.saes);;所有文件 (*)', 'Encrypted files (*.saes);;All files (*)'),
     'guide_body': (
-        '<h2>01 · 隐藏与恢复</h2><p>在“隐藏文件”中先选择载体图片和秘密文件，点击“检查实际容量”，再设置口令或选用已有密钥，指定 PNG 输出位置后开始处理。预检会实际压缩文件，计算需求和目标尺寸；容量不足时可启用受预算限制的自动扩容。</p><p>恢复时切换到“提取文件”，选择生成的 PNG，并提供完全相同的口令或密钥。默认按原文件名和格式恢复：选择保存文件夹，认证成功后即可找回完整原文件。也可先“验证并查看元数据”，或取消自动原名选项来自定义文件名。</p>'
-        '<h2>02 · 口令与密钥</h2><p>口令保护使用 scrypt，密钥文件保护使用 HKDF；内容使用 AES-256-GCM 认证加密。遗失口令或密钥后无法恢复。口令不会写入设置，所有任务结束后都会清除各页口令，包括无需口令的容量预检。先预检再输入口令可减少重复输入。</p><p>“密钥工具”生成 .stegkey 文件。请备份到安全位置，通过独立渠道交付；不要与隐藏图片放在同一公开位置。</p>'
-        '<h2>03 · 传输与兼容</h2><p>请使用 PNG 原文件传输。选择聊天工具的“原图”或“文件”方式；有损压缩、缩放、裁剪、滤镜和重新保存均可能破坏 RGB-LSB 数据。隐写不会让图片具备抵抗专业检测的保证。</p><p>桌面版沿用 v1.0 文件格式，可与原命令行工具配合。“文件加解密”可处理独立加密文件及旧版 .saes。</p>'
-        '<h2>04 · 完成摘要与验证</h2><p>默认拒绝覆盖现有文件。如确需覆盖，请显式勾选覆盖选项。输出不能是输入、载体或密钥。完成摘要显示任务、输入路径、完成时间、状态和输出位置；有输出时可打开目录。技术详情默认折叠，展开后分别复制原始文件与完整容器 SHA-256。更换对应输入后，旧成功结果失效，新的恢复输入尚未验证。</p><p>“验证文件”自动识别 PNG 和 SAES，通过系统临时目录中的私有加密容器副本认证，不输出解密文件。认证和两项摘要针对本次捕获的同一份数据：原始文件摘要对应解密内容，完整容器摘要覆盖整个输入（含附加数据），两者不能混用。成功状态仅描述本次捕获的数据；分块读取不是系统原子快照，验证结果不保证之后的源文件保持不变。请保留源文件，恢复并比对后再决定归档。</p>'
-        '<h2>05 · 恢复预算与临时空间</h2><p>默认预算分别为 2500 万像素、256 MiB 文件载荷和 512 MiB 完整恢复容器，图片预览另设 1600 万像素上限。超出预算不代表文件损坏，请勿缩放、裁剪或重新保存原隐写 PNG。恢复页面可展开高级设置；预算只保留在当前窗口，不持久保存。提高默认预算须在每次任务前确认设备资源，修改输入或预算、结束任务后会清除确认。</p><p>资源预览在后台读取文件大小和临时卷可用空间；开始恢复任务时先在后台重新检查并显示结果。验证或查看信息在复制前再次检查，要求容器大小加 16 MiB 安全余量。系统临时副本不会修改原文件，成功、失败或取消后清理。内存需求是估算，磁盘可用空间也可能被其他程序改变；安全余量不是资源保证。</p>'
+        '<h2>01 · 隐藏与恢复</h2><p>在“隐藏文件”中先选择载体图片和秘密文件，点击“检查实际容量”，再设置口令或选用已有密钥，指定 PNG／GIF 输出位置后开始处理。预检会实际压缩文件，计算需求和目标尺寸；PNG 容量不足时可启用受预算限制的自动扩容；GIF 保持原动画尺寸。</p><p>恢复时切换到“提取文件”，选择生成的 PNG／GIF，并提供完全相同的口令或密钥。默认按原文件名和格式恢复：选择保存文件夹，认证成功后即可找回完整原文件。也可先“验证并查看元数据”，或取消自动原名选项来自定义文件名。</p>'
+        '<h2>02 · 口令与密钥</h2><p>口令保护使用 scrypt，密钥文件保护使用 HKDF；内容使用 AES-256-GCM 认证加密。遗失口令或密钥后无法恢复。口令只保留在当前窗口，不写入设置。失败、取消和容量预检会保留已输入的口令，方便调整选项后重试；加密、恢复或验证成功后只清除本次使用页的口令，关闭窗口时清除所有页。你也可以随时手动清空口令框。</p><p>“密钥工具”生成 .stegkey 文件。请备份到安全位置，通过独立渠道交付；不要与隐藏图片放在同一公开位置。</p>'
+        '<h2>03 · 传输与兼容</h2><p>请使用 PNG／GIF 原文件传输。GIF 密文在标准扩展块中，重编码可能删除它；GIF 需新版两端恢复。选择聊天工具的“原图”或“文件”方式；有损压缩、缩放、裁剪、滤镜和重新保存均可能破坏 RGB-LSB 数据。隐写不会让图片具备抵抗专业检测的保证。</p><p>PNG／SAES 沿用 v1.0 文件格式，可与原命令行工具配合。“文件加解密”可处理独立加密文件及旧版 .saes。</p>'
+        '<h2>04 · 完成摘要与验证</h2><p>默认拒绝覆盖现有文件。如确需覆盖，请显式勾选覆盖选项。输出不能是输入、载体或密钥。完成摘要显示任务、输入路径、完成时间、状态和输出位置；有输出时可打开目录。技术详情默认折叠，展开后分别复制原始文件与完整容器 SHA-256。更换对应输入后，旧成功结果失效，新的恢复输入尚未验证。</p><p>“验证文件”自动识别 PNG、GIF 和 SAES，通过系统临时目录中的私有加密容器副本认证，不输出解密文件。认证和两项摘要针对本次捕获的同一份数据：原始文件摘要对应解密内容，完整容器摘要覆盖整个输入（含附加数据），两者不能混用。成功状态仅描述本次捕获的数据；分块读取不是系统原子快照，验证结果不保证之后的源文件保持不变。请保留源文件，恢复并比对后再决定归档。</p>'
+        '<h2>05 · 恢复预算与临时空间</h2><p>默认预算分别为 2500 万像素、256 MiB 文件载荷和 512 MiB 完整恢复容器，图片预览另设 1600 万像素上限。超出预算不代表文件损坏，请勿缩放、裁剪或重新保存原隐写 PNG／GIF。恢复页面可展开高级设置；预算只保留在当前窗口，不持久保存。提高默认预算须在每次任务前确认设备资源，修改输入或预算、结束任务后会清除确认。</p><p>资源预览在后台读取文件大小和临时卷可用空间；开始恢复任务时先在后台重新检查并显示结果。验证或查看信息在复制前再次检查，要求容器大小加 16 MiB 安全余量。系统临时副本不会修改原文件，成功、失败或取消后清理。内存需求是估算，磁盘可用空间也可能被其他程序改变；安全余量不是资源保证。</p>'
         '<h2>06 · 字号、进度与取消</h2><p>侧栏可切换“标准／大字号”，大字号增加 2px，三主题和 16px 细进度条保持原有风格。小屏时窗口适配可用工作区，较窄的表单上下排列，侧栏可以滚动。</p><p>进度条显示当前阶段的真实进度，阶段切换时会重新计数；无法细分的计算显示等待状态。“取消操作”会在安全检查点停止。处理时关闭窗口会先请求取消，线程结束后再关闭；已经提交的结果仍按成功处理。全部计算都在本机执行，无需账户或网络。</p>',
-        '<h2>01 · Hide and recover</h2><p>In Hide a file, choose a cover and secret, check actual capacity, then enter a password or select an existing key and choose a PNG destination. Preflight compresses the file to measure requirements and target dimensions. Automatic resizing remains subject to resource limits.</p><p>To recover, open Extract a file and select the generated PNG. Use exactly the same password or key. Choose a save folder to restore the original filename and format after verification. Verify and inspect metadata shows the original name and checksum. Uncheck automatic restoration to choose a custom filename.</p>'
-        '<h2>02 · Passwords and keys</h2><p>Password protection uses scrypt; key-file protection uses HKDF. Content is authenticated with AES-256-GCM. Lost credentials cannot be recovered. Passwords are never saved to settings. Every completed job clears password fields on all pages, including password-free preflight. Check capacity before entering credentials to avoid unnecessary re-entry.</p><p>Key tools creates a .stegkey file. Back it up securely and send it through a separate channel. Do not publish it alongside the image.</p>'
-        '<h2>03 · Sharing and compatibility</h2><p>Transfer the original PNG. In messaging apps, send as an original image or a file. Lossy compression, resizing, cropping, filters, and re-saving may destroy RGB-LSB data. Steganography does not guarantee resistance to professional detection.</p><p>The desktop app uses the v1.0 format and works with the original command-line tool. File encryption supports standalone encrypted files and legacy .saes files.</p>'
-        '<h2>04 · Completion summary and verification</h2><p>Existing files are protected by default. Enable replacement explicitly only when intended. Output cannot overwrite an input, cover or key. The summary shows the task, input path, completion time, status and output location, with an output-folder action when applicable. Expand technical details to copy the original-file and whole-container SHA-256 separately. Changing the associated input invalidates its old success result; the newly selected recovery input is unverified.</p><p>Verify a file detects PNG and SAES and authenticates a private encrypted container copy in the system temporary directory without writing a decrypted file. Authentication and both digests use the same captured data. The payload digest identifies decrypted content; the container digest covers the entire input, including appended data. Successful verification describes this capture only. Chunked reading is not an atomic OS snapshot and does not guarantee the source stays unchanged afterward. Retain the original until recovery and comparison are complete.</p>'
-        '<h2>05 · Recovery budgets and temporary space</h2><p>Default budgets are 25 million pixels, 256 MiB payload and 512 MiB for the complete recovery container. Image previews have a separate 16 million pixel limit. A budget error does not establish corruption: do not resize, crop or re-save the original steganographic PNG. Advanced recovery limits remain in the current window only, without persistent storage. Limits above the defaults require resource acknowledgement for each run; changes to the input or limits and job completion clear that acknowledgement.</p><p>Resource previews read file size and temporary-volume free space in the background. Each recovery job first refreshes and displays this information from its worker. Verification and information checks recheck before copying, requiring the container size plus a 16 MiB reserve. The temporary encrypted copy does not modify the original and is removed after success, failure or cancellation. Memory figures are estimates; other programs can consume disk space after inspection. The reserve is not a resource guarantee.</p>'
+        '<h2>01 · Hide and recover</h2><p>In Hide a file, choose a cover and secret, check actual capacity, then enter a password or select an existing key and choose a PNG/GIF destination. Preflight compresses the file to measure requirements and target dimensions. PNG resizing remains subject to resource limits; GIF retains its original animation dimensions.</p><p>To recover, open Extract a file and select the generated PNG/GIF. Use exactly the same password or key. Choose a save folder to restore the original filename and format after verification. Verify and inspect metadata shows the original name and checksum. Uncheck automatic restoration to choose a custom filename.</p>'
+        '<h2>02 · Passwords and keys</h2><p>Password protection uses scrypt; key-file protection uses HKDF. Content is authenticated with AES-256-GCM. Lost credentials cannot be recovered. Passwords stay only in the current window and are never saved to settings. Failed or cancelled jobs and capacity checks retain entered passwords so you can adjust options and retry. Successful encryption, recovery or verification clears only the page used by that job; closing the window clears every page. You can also clear the password fields manually at any time.</p><p>Key tools creates a .stegkey file. Back it up securely and send it through a separate channel. Do not publish it alongside the image.</p>'
+        '<h2>03 · Sharing and compatibility</h2><p>Transfer the original PNG/GIF. GIF stores ciphertext in a standard application extension, which re-encoding may remove; upgrade both ends for GIF recovery. In messaging apps, send as an original image or a file. Lossy compression, resizing, cropping, filters, and re-saving may destroy RGB-LSB data. Steganography does not guarantee resistance to professional detection.</p><p>PNG/SAES retain the v1.0 format and work with the original command-line tool. File encryption supports standalone encrypted files and legacy .saes files.</p>'
+        '<h2>04 · Completion summary and verification</h2><p>Existing files are protected by default. Enable replacement explicitly only when intended. Output cannot overwrite an input, cover or key. The summary shows the task, input path, completion time, status and output location, with an output-folder action when applicable. Expand technical details to copy the original-file and whole-container SHA-256 separately. Changing the associated input invalidates its old success result; the newly selected recovery input is unverified.</p><p>Verify a file detects PNG, GIF and SAES and authenticates a private encrypted container copy in the system temporary directory without writing a decrypted file. Authentication and both digests use the same captured data. The payload digest identifies decrypted content; the container digest covers the entire input, including appended data. Successful verification describes this capture only. Chunked reading is not an atomic OS snapshot and does not guarantee the source stays unchanged afterward. Retain the original until recovery and comparison are complete.</p>'
+        '<h2>05 · Recovery budgets and temporary space</h2><p>Default budgets are 25 million pixels, 256 MiB payload and 512 MiB for the complete recovery container. Image previews have a separate 16 million pixel limit. A budget error does not establish corruption: do not resize, crop or re-save the original steganographic PNG/GIF. Advanced recovery limits remain in the current window only, without persistent storage. Limits above the defaults require resource acknowledgement for each run; changes to the input or limits and job completion clear that acknowledgement.</p><p>Resource previews read file size and temporary-volume free space in the background. Each recovery job first refreshes and displays this information from its worker. Verification and information checks recheck before copying, requiring the container size plus a 16 MiB reserve. The temporary encrypted copy does not modify the original and is removed after success, failure or cancellation. Memory figures are estimates; other programs can consume disk space after inspection. The reserve is not a resource guarantee.</p>'
         '<h2>06 · Text size, progress and cancellation</h2><p>Select Standard or Large text in the sidebar; Large adds 2px while retaining the themes and 16px progress strip. Windows fit the available screen area, narrow forms stack their columns, and the sidebar can scroll.</p><p>The progress bar reports the current stage and resets as stages change. Computations without finer progress show a waiting state. Cancel operation stops at a safe checkpoint. Closing a busy window requests cancellation and closes only after its worker finishes; already committed results are reported as successful. Everything runs locally without an account or network.</p>'
     ),
 }

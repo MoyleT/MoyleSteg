@@ -91,7 +91,7 @@ def main():
         shutil.copy2(ROOT / name, release_root / name)
     release_docs = release_root / "docs"
     release_docs.mkdir(exist_ok=True)
-    for name in ("RELEASE.md", "SECURITY_FIXES_1.2.md", "RELIABILITY_1.2.1.md", "VERIFICATION_1.2.2.md", "APPEARANCE_1.3.0.md", "RECOVERY_1.4.0.md", "RELIABILITY_1.4.1.md"):
+    for name in ("RELEASE.md", "SECURITY_FIXES_1.2.md", "RELIABILITY_1.2.1.md", "VERIFICATION_1.2.2.md", "APPEARANCE_1.3.0.md", "RECOVERY_1.4.0.md", "RELIABILITY_1.4.1.md", "GIF_1.5.0.md", "RELIABILITY_1.5.1.md"):
         if (ROOT / "docs" / name).is_file():
             shutil.copy2(ROOT / "docs" / name, release_docs / name)
     (release_root / "RELEASE_VERSION.txt").write_text(project_version(ROOT) + "\n", encoding="utf-8")

@@ -130,7 +130,7 @@ def test_theme_switch_during_a_job_preserves_lock_progress_and_safe_cancel(qtbot
     assert window._feedback_key == 'cancelled'
     assert not any(timer.isActive() for timer in window.progress.findChildren(QTimer))
     assert not output.exists()
-    assert form['password'].text() == ''
+    assert form['password'].text() == 'temporary task password'
     assert form['run'].isEnabled()
 
 

@@ -1,6 +1,6 @@
 """Run the synchronous engine outside Qt's interface thread."""
 from threading import Event
-from time import monotonic
+from time import monotonic, sleep
 from dataclasses import replace
 from PySide6.QtCore import QThread, Signal
 from png_steg_aes256 import OperationControl, OperationCancelled
@@ -40,6 +40,10 @@ class JobThread(QThread):
             self._last_progress_time = now
             self._last_stage = stage
             self.progress.emit(stage, completed, total)
+        # Pixel/layout loops are Python-heavy. Merely emitting a queued signal
+        # does not let the GUI's Python paint/event handlers acquire the GIL.
+        # Yield at the core's bounded checkpoints; keep real progress unchanged.
+        sleep(0.001)
 
     def run(self):
         try:

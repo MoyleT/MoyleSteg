@@ -23,7 +23,7 @@ PUBLIC_SCREENSHOTS = (
     "completion-summary.png", "compact-large.png",
 )
 ROOT_FILES = frozenset({
-    "main.py", "png_steg_aes256.py", "MoyleSteg.spec", "pytest.ini", ".gitignore",
+    "main.py", "png_steg_aes256.py", "gif_carrier.py", "MoyleSteg.spec", "pytest.ini", ".gitignore",
     "README_DESKTOP.md", "README_AES256_三合一.md", "PROJECT_OVERVIEW.md",
     "THIRD_PARTY_NOTICES.md", "SHA256SUMS.txt", "requirements.txt",
     "requirements-dev.txt", "requirements-gui.txt", "requirements-build.txt", "requirements-test.txt",
@@ -43,7 +43,7 @@ SOURCE_RULES = {
                "ui-blossom-up.svg", "ui-blossom-down.svg", "ui-blossom-check.svg",
                "ui-terminal-up.svg", "ui-terminal-down.svg", "ui-terminal-check.svg"),
     "licenses": ("*.txt",),
-    "docs": ("RELEASE.md", "SECURITY_FIXES_1.2.md", "RELIABILITY_1.2.1.md", "VERIFICATION_1.2.2.md", "APPEARANCE_1.3.0.md", "RECOVERY_1.4.0.md", "RELIABILITY_1.4.1.md"),
+    "docs": ("RELEASE.md", "SECURITY_FIXES_1.2.md", "RELIABILITY_1.2.1.md", "VERIFICATION_1.2.2.md", "APPEARANCE_1.3.0.md", "RECOVERY_1.4.0.md", "RELIABILITY_1.4.1.md", "GIF_1.5.0.md", "RELIABILITY_1.5.1.md"),
     "docs/screenshots": PUBLIC_SCREENSHOTS,
 }
 PRIVATE_PARTS = frozenset({
@@ -51,11 +51,12 @@ PRIVATE_PARTS = frozenset({
     "__pycache__", ".pytest_cache", ".superpowers", ".codex",
 })
 REQUIRED_FILES = frozenset({
-    "main.py", "png_steg_aes256.py", "moyle_steg/__init__.py", "README_DESKTOP.md",
+    "main.py", "png_steg_aes256.py", "gif_carrier.py", "moyle_steg/__init__.py", "README_DESKTOP.md",
     "SHA256SUMS.txt", "docs/RELEASE.md", "docs/SECURITY_FIXES_1.2.md",
     "docs/RELIABILITY_1.2.1.md", "docs/VERIFICATION_1.2.2.md", "docs/APPEARANCE_1.3.0.md",
     "docs/RECOVERY_1.4.0.md", "dist/MoyleSteg/docs/RECOVERY_1.4.0.md",
     "docs/RELIABILITY_1.4.1.md", "dist/MoyleSteg/docs/RELIABILITY_1.4.1.md",
+    "docs/GIF_1.5.0.md", "dist/MoyleSteg/docs/GIF_1.5.0.md",
     "assets/strawberry-sticker.png", "assets/cherry-sticker.png",
     "dist/MoyleSteg/docs/VERIFICATION_1.2.2.md", "dist/MoyleSteg/docs/APPEARANCE_1.3.0.md",
     "dist/MoyleSteg/MoyleSteg.exe", "dist/MoyleSteg/RELEASE_VERSION.txt",

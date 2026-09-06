@@ -1,0 +1,6 @@
+{
+  "reference_sha256": "df3d531e6b086403a417890410525c591a58e71d6070d9cc862e61a4d02bdad2",
+  "python": "3.13.5 (main, Jul 15 2026, 20:25:40) [GCC 14.2.0]",
+  "synthetic_cases": 8,
+  "note": "PUBLIC test key; NEVER use it for private data"
+}

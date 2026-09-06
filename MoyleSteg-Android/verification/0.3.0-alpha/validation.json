@@ -1,0 +1,286 @@
+{
+  "version": "0.3.0-alpha",
+  "apk": {
+    "bytes": 15118239,
+    "sha256": "cbd998530da309f5e54d6115c02fcfc9fc64607cfbd387df65e3ea953242f090",
+    "certificate_sha256": "9f8c5e40be3860dbcf971b2c0c50cfce8ebaea81e60f836c9c458e5cb4a458e0",
+    "versionCode": 5,
+    "minSdk": 26,
+    "targetSdk": 36,
+    "internet_permission": false,
+    "test_keys_fixtures_and_credentials": "absent"
+  },
+  "png-saes-python": {
+    "kotlin_to_python_cases": 16,
+    "all_passed": true,
+    "results": [
+      {
+        "file": "empty_key.png",
+        "mode": "key",
+        "bytes": 0,
+        "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pass": true
+      },
+      {
+        "file": "empty_key.saes",
+        "mode": "key",
+        "bytes": 0,
+        "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pass": true
+      },
+      {
+        "file": "empty_password.png",
+        "mode": "password",
+        "bytes": 0,
+        "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pass": true
+      },
+      {
+        "file": "empty_password.saes",
+        "mode": "password",
+        "bytes": 0,
+        "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "pass": true
+      },
+      {
+        "file": "random_key.png",
+        "mode": "key",
+        "bytes": 3073,
+        "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+        "pass": true
+      },
+      {
+        "file": "random_key.saes",
+        "mode": "key",
+        "bytes": 3073,
+        "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+        "pass": true
+      },
+      {
+        "file": "random_password.png",
+        "mode": "password",
+        "bytes": 3073,
+        "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+        "pass": true
+      },
+      {
+        "file": "random_password.saes",
+        "mode": "password",
+        "bytes": 3073,
+        "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+        "pass": true
+      },
+      {
+        "file": "compressed_key.png",
+        "mode": "key",
+        "bytes": 13500,
+        "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+        "pass": true
+      },
+      {
+        "file": "compressed_key.saes",
+        "mode": "key",
+        "bytes": 13500,
+        "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+        "pass": true
+      },
+      {
+        "file": "compressed_password.png",
+        "mode": "password",
+        "bytes": 13500,
+        "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+        "pass": true
+      },
+      {
+        "file": "compressed_password.saes",
+        "mode": "password",
+        "bytes": 13500,
+        "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+        "pass": true
+      },
+      {
+        "file": "unicode_key.png",
+        "mode": "key",
+        "bytes": 620,
+        "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+        "pass": true
+      },
+      {
+        "file": "unicode_key.saes",
+        "mode": "key",
+        "bytes": 620,
+        "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+        "pass": true
+      },
+      {
+        "file": "unicode_password.png",
+        "mode": "password",
+        "bytes": 620,
+        "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+        "pass": true
+      },
+      {
+        "file": "unicode_password.saes",
+        "mode": "password",
+        "bytes": 620,
+        "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+        "pass": true
+      }
+    ]
+  },
+  "autoexpand-python": {
+    "expanded_kotlin_to_python_cases": 2,
+    "all_passed": true,
+    "results": [
+      {
+        "mode": "key",
+        "width": 112,
+        "height": 112,
+        "bytes": 4096,
+        "restored_sha256": "5f5c7c59d52fcb844e76ff1bbfb62492ca8df3927e0287f9d9f50b159e99ddb3",
+        "passed": true
+      },
+      {
+        "mode": "password",
+        "width": 112,
+        "height": 112,
+        "bytes": 4096,
+        "restored_sha256": "5f5c7c59d52fcb844e76ff1bbfb62492ca8df3927e0287f9d9f50b159e99ddb3",
+        "passed": true
+      }
+    ]
+  },
+  "gif-python": {
+    "direction": "Kotlin-to-Python",
+    "desktop_reference": "1.5.0",
+    "synthetic_only": true,
+    "kotlin_to_python_gif_cases": 2,
+    "all_passed": true,
+    "results": [
+      {
+        "file": "gif-key.gif",
+        "mode": "key",
+        "pass": true,
+        "restored_bytes": 4096,
+        "frames": 3,
+        "loop": 2,
+        "original_animation_bytes_preserved": true,
+        "pillow_all_frames_rgba_timing_disposal_equal": true,
+        "restored_sha256": "4219b83823b9929bdcebeab45621143d90881563b0f978dc6fb7b801f72a7467",
+        "container_sha256": "9fddcbabedcfb1cfe30ba582ddb80213bab831dbca105687b3e57cd5995358c0"
+      },
+      {
+        "file": "gif-password.gif",
+        "mode": "password",
+        "pass": true,
+        "restored_bytes": 4096,
+        "frames": 3,
+        "loop": 2,
+        "original_animation_bytes_preserved": true,
+        "pillow_all_frames_rgba_timing_disposal_equal": true,
+        "restored_sha256": "4219b83823b9929bdcebeab45621143d90881563b0f978dc6fb7b801f72a7467",
+        "container_sha256": "ced9897fa558010912cc4f2bc02cec9a268676fd0cdd68d0319e26d04568f518"
+      }
+    ]
+  },
+  "app_tests": [
+    {
+      "name": "com.moyle.steg.android.AutoExpandViewModelTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.DocumentStoreRegressionTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.GifViewModelTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.LargeDocumentStoreTest",
+      "tests": "16",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.LargeFileViewModelTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.MemoryPolicyTest",
+      "tests": "15",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.SelectionRegressionTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    }
+  ],
+  "app_test_total": 70,
+  "core_counts": {
+    "core": 72,
+    "capture": 26,
+    "autoexpand": 24,
+    "gif": 43,
+    "streaming_saes": 30
+  },
+  "additional_core_scenarios": {
+    "png_memory": 5,
+    "image_memory": 6,
+    "bounded_read_memory": 5,
+    "saes_low_heap": 1,
+    "fingerprint_vectors": 3
+  },
+  "lint": {
+    "Warning": 8
+  },
+  "instrumentation_apk": {
+    "built": true,
+    "executed": false
+  },
+  "device_execution": "not executed; desktop JVM and Robolectric are not iQOO device tests",
+  "large_file": {
+    "passed": true,
+    "synthetic_only": true,
+    "runtime": "JVM desktop core, not an Android device",
+    "payload_bytes": 1073741824,
+    "jvm_max_heap_bytes": 134217728,
+    "jvm_heap_flag": "-Xmx128m",
+    "wall_seconds": 109.782,
+    "scenario_seconds": 109.5008156,
+    "source_sha256": "06e783a40386e4f9fb9a614c83061e37fbd06b991eb3d8cd3a4ba386717c010c",
+    "sha256_match": true,
+    "sha256_evidence": "Python streamed a stable full source hash; the JVM scenario independently asserts source digest equals encryption metadata, read-only verification metadata, and SHA256 of restored file bytes.",
+    "operations": [
+      "synthetic incompressible source generation",
+      "file encryption with independent saved verification",
+      "read-only verify",
+      "file decryption",
+      "independent restored-file SHA256"
+    ],
+    "source_and_private_outputs_cleaned": true,
+    "returncode": 0,
+    "log": "<project>\\artifacts\\android-large-0.3.0\\interop-large\\large-1gib.log",
+    "jar": "<project>\\artifacts\\android-large-0.3.0\\interop-large\\stream-core-tests.jar",
+    "jar_sha256": "102fda990c02321c09ae59741261f2aedb88b79def25d8b7f8e9fb631fe5e808"
+  },
+  "cross_platform_case_count": 32
+}

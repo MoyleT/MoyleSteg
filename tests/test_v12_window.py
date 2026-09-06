@@ -76,7 +76,8 @@ def test_cancel_button_and_close_wait_for_worker_finished(qtbot, tmp_path, close
         assert window.isVisible()
     assert not output.exists()
     assert window.last_result is None
-    assert form['password'].text() == '' and form['confirm'].text() == ''
+    expected_password = '' if close_window else 'test UI cancellation'
+    assert form['password'].text() == expected_password and form['confirm'].text() == expected_password
     assert window.status_label.text() == 'Operation cancelled.'
 
 

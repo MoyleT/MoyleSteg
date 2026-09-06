@@ -20,3 +20,7 @@ The 1.3.0 appearance work consulted [Impeccable by Paul Bakaus](https://github.c
 The Blossom theme includes `assets/strawberry-sticker.png` and `assets/cherry-sticker.png`, generated for this project with the built-in ImageGen tool and edited to the user's requested face-free style with transparent alpha. The final PNGs are copied unchanged into the project. These are bundled local UI images; the app does not call ImageGen or download the images at runtime. The final generation and editing brief is recorded in `docs/APPEARANCE_1.3.0.md`. They are not Impeccable assets or imported third-party example images.
 
 This notice does not assign a new license to the original project or the user's own code and files.
+
+## GIF format
+
+GIF carrier parsing follows the CompuServe GIF89a format, as hosted at https://www.w3.org/Graphics/GIF/spec-gif89a.txt. The Graphics Interchange Format is the copyright property of CompuServe Incorporated; GIF is a service mark of CompuServe Incorporated. The application-extension and LZW validation implementations in this project are project code, not copied reference decoder source.

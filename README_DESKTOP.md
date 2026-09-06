@@ -1,10 +1,10 @@
 # Moyle 隐写工坊 / Steganography Studio
 
-Windows 桌面版 1.4.1，提供深邃蓝紫、草莓樱桃粉色与黑客绿色三种主题、受控恢复预算、带输入上下文的完成摘要、大字号与小屏适配。保留 v1 PNG / `.saes` / `.stegkey` 格式兼容性；只读验证的认证与两项 SHA-256 仍基于同一份捕获数据。
+Windows 桌面版 1.5.1，改善计算中的界面响应与失败重试体验，支持可播放 GIF 动画载体，并提供深邃蓝紫、草莓樱桃粉色与黑客绿色三种主题、受控恢复预算、带输入上下文的完成摘要、大字号与小屏适配。保留 v1 PNG / `.saes` / `.stegkey` 格式兼容性；只读验证的认证与两项 SHA-256 仍基于同一份捕获数据。
 
-1.4.1 让提取和解密的完整容器预算约束最终打开的文件，阻止凭据读取后替换／增长造成的预算绕过；同时修复长文件名与摘要在窄窗口撑宽结果卡的问题。三主题、16 像素细进度条、无表情水果装饰及下拉弹窗修复均保留。附带五张只含合成演示数据的当前版本截图。
+GIF 可直接作为载体，输出保留动画，支持 Android 0.2.0-alpha 双向恢复。GIF 密文放在标准应用扩展块，不使用像素 LSB；动画不重编码，GIF 不做像素扩容。请按文件传输，避免聊天软件重新处理时删除扩展。完整协议、资源限制与实际验证范围见 [GIF 版本说明](docs/GIF_1.5.0.md)。
 
-Version 1.4.1 checks the container budget on the actual opened restoration input and bounds PNG/SAES reads, closing the post-credential replacement window. Long names and digests no longer widen narrow result cards. Existing themes, 16-pixel loading area, face-free fruit decoration and popup-shell fix remain. Five current synthetic UI illustrations are included in the source documentation.
+Version 1.5.1 improves progress responsiveness and retains passwords during retries. Animated GIF carriers remain interoperable with Android 0.2.0-alpha. An application extension contains the existing encrypted SAES payload; original animation blocks are preserved without re-encoding. GIF does not use pixel LSBs or pixel resizing. File analysis can identify the extension, and re-encoding may remove it. Existing PNG/SAES formats, themes and safety checks remain.
 
 ## 直接运行 / Run the portable app
 
@@ -42,22 +42,22 @@ Loading visuals follow the selected theme: juice and a few bubbles for Blossom, 
 
 Dropping a local file into an input references its existing path without moving the source. The field highlights when a valid file is dragged over it.
 
-1.3 系列主题参考了 GitHub 上 [Impeccable](https://github.com/pbakaus/impeccable) 的层次、留白、色彩和动态设计方法，以及 [Anthropic frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 的设计指导。应用仍为原生 Qt 桌面程序；这些参考未成为运行依赖。历史外观与素材来源见 [docs/APPEARANCE_1.3.0.md](docs/APPEARANCE_1.3.0.md)，本版变化与合成截图见 [docs/RELIABILITY_1.4.1.md](docs/RELIABILITY_1.4.1.md)。
+1.3 系列主题参考了 GitHub 上 [Impeccable](https://github.com/pbakaus/impeccable) 的层次、留白、色彩和动态设计方法，以及 [Anthropic frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 的设计指导。应用仍为原生 Qt 桌面程序；这些参考未成为运行依赖。历史外观与素材来源见 [docs/APPEARANCE_1.3.0.md](docs/APPEARANCE_1.3.0.md)，本版变化见 [1.5.1 修复说明](docs/RELIABILITY_1.5.1.md)，合成截图见下方图库。
 
 ## 功能 / Workflows
 
 | 页面 / Page | 用途 / Purpose |
 |---|---|
-| 隐藏文件 / Hide a file | 选择载体和秘密文件，先“检查实际容量”，再设置凭据并输出 PNG；预检测量压缩后的需求和目标尺寸，自动扩容仍受资源限制。 / Choose a cover and secret, check actual capacity, then set credentials and create the PNG. Preflight measures compressed requirements and target dimensions; optional resizing respects resource limits. |
+| 隐藏文件 / Hide a file | 选择载体和秘密文件，先检查实际容量，再设置凭据。GIF 输出保持动画的 .gif；其他载体输出 PNG。GIF 预检显示帧数与成品体积，PNG 可按预算扩容。 / Choose a cover and secret, check capacity, then set credentials. GIF stays animated; other images produce PNG. GIF preflight reports frames and output bytes; PNG can resize within its budget. |
 | 提取文件 / Extract a file | 选择保存文件夹，认证后自动按原文件名及后缀恢复；也可查看元数据或自定义文件名。 / Choose a folder and recover the original name and extension after verification. Metadata inspection and custom filenames are also available. |
 | 文件加解密 / File encryption | 使用独立 `.saes` 容器加密；解密默认恢复原文件名和格式。 / Encrypt standalone `.saes` containers; decryption restores the original name and format by default. |
-| 验证文件 / Verify a file | 自动识别 PNG 或 SAES，基于同一份临时容器副本认证内容并显示原始文件与完整输入容器的两份 SHA-256，不输出解密文件。 / Detect PNG or SAES, authenticate one temporary container copy and show separate SHA-256 values for its original payload and complete container, without writing a decrypted file. |
+| 验证文件 / Verify a file | 自动识别 PNG、GIF 或 SAES，基于同一份临时容器副本认证内容并显示原始文件与完整输入容器的两份 SHA-256，不输出解密文件。 / Detect PNG, GIF or SAES, authenticate one temporary container copy and show separate SHA-256 values for its original payload and complete container, without writing a decrypted file. |
 | 密钥工具 / Key tools | 创建随机 256-bit `.stegkey` 文件。 / Create a random 256-bit `.stegkey` file. |
 | 使用指南 / User guide | 查看离线操作说明。 / Read the offline guide. |
 
-验证先按块读取输入，在系统临时目录建立私有容器副本；认证、原始文件 SHA-256 和完整输入容器 SHA-256 均基于本次捕获的数据。原始文件摘要对应解密后的内容，完整输入摘要对应整个 PNG 或 SAES（含附加数据），不能混用。副本保留输入的加密容器数据，不输出解密文件；复制前检查容器大小与系统临时卷可用空间，要求容器大小加 16 MiB 安全余量。副本在任务成功、失败或取消后清理。源文件仍可能被其他程序修改；分块读取不是操作系统原子快照，验证结果也不保证之后的源文件保持不变。
+验证先按块读取输入，在系统临时目录建立私有容器副本；认证、原始文件 SHA-256 和完整输入容器 SHA-256 均基于本次捕获的数据。原始文件摘要对应解密后的内容，完整输入摘要对应整个 PNG、GIF 或 SAES（含该格式允许的附加数据），不能混用。副本保留输入的加密容器数据，不输出解密文件；复制前检查容器大小与系统临时卷可用空间，要求容器大小加 16 MiB 安全余量。副本在任务成功、失败或取消后清理。源文件仍可能被其他程序修改；分块读取不是操作系统原子快照，验证结果也不保证之后的源文件保持不变。
 
-Verification reads the input in bounded chunks into a private copy in the system temporary directory. Authentication and both checksums use this captured data. The original-file checksum identifies decrypted content; the container checksum covers the entire PNG or SAES, including appended data. Before copying, the service checks the container budget and temporary-volume free space, requiring the container size plus a 16 MiB reserve. The copy contains encrypted container bytes, is cleaned up after success, failure or cancellation, and does not write a decrypted file. Chunked reading is not an atomic operating-system snapshot; verification does not guarantee the source stays unchanged afterward.
+Verification reads the input in bounded chunks into a private copy in the system temporary directory. Authentication and both checksums use this captured data. The original-file checksum identifies decrypted content; the container checksum covers the entire PNG, GIF or SAES, including additional data permitted by that format. Before copying, the service checks the container budget and temporary-volume free space, requiring the container size plus a 16 MiB reserve. The copy contains encrypted container bytes, is cleaned up after success, failure or cancellation, and does not write a decrypted file. Chunked reading is not an atomic operating-system snapshot; verification does not guarantee the source stays unchanged afterward.
 
 任务在后台运行，进度显示当前阶段、该阶段可用的真实计数/百分比及用时；切换阶段时百分比可重置，没有细分计数的计算显示等待状态，而非总任务百分比。点击“取消操作”会在安全检查点停止，当前不可中断计算可能需要等待。运行中关闭窗口会请求安全取消，待工作线程结束后再关闭；已完成提交的结果仍按成功报告。运行中禁止重复提交。完成后可查看验证信息、复制 SHA-256，并在有输出时打开其目录。
 
@@ -67,9 +67,9 @@ Operations run in the background. Progress shows the current stage, its availabl
 
 The completion summary shows the task, input path, completion time, status and output location first. Expand technical details for sizes, algorithms and separate payload/container checksum copy actions. Changing the associated input or encryption/decryption mode clears the old result; a newly selected recovery input is marked unverified. Successful verification describes the captured data for that run. Long tokens wrap within the available width while the complete plain text remains selectable.
 
-输出默认不覆盖已有文件。即便允许覆盖，输入文件、载体与所选密钥路径也始终受保护。加密口令需输入两次；解密只需一次。任务完成后清除口令字段。
+输出默认不覆盖已有文件。即便允许覆盖，输入文件、载体与所选密钥路径也始终受保护。加密口令需输入两次；解密只需一次。选路径失败、容量不足、任务失败和取消后保留当前口令，便于修改参数后重试；容量预检不清空口令。成功的认证操作只清理本次使用页面的口令，实际关闭窗口时清理所有页面。口令仅留在当前表单，不写入设置或日志，重新启动后需重新输入。
 
-Existing files are preserved by default. Even with overwrite enabled, inputs, covers and the selected key path remain protected. Encryption requires matching passwords; decryption requires one entry. Password fields clear after a job finishes.
+Existing files are preserved by default. Even with overwrite enabled, inputs, covers and the selected key path remain protected. Encryption requires matching passwords; decryption requires one entry. Failed paths, insufficient capacity, failures and cancellation preserve current password fields for retry; preflight leaves them intact. Successful authenticated operations clear only their own page, and closing the window clears all pages. Passwords stay in live form controls without settings or log persistence; restarting requires re-entry.
 
 提取或解密时默认勾选“按原文件名和格式恢复”。例如原文件为 `报告.pdf`，恢复后仍为 `报告.pdf`，并校验内容一致。文件名来自经过认证的加密元数据，无需猜测文件格式，也不会统一改为 `.bin`。默认保存到输入旁独立的恢复文件夹。取消此选项可选择完整文件名；两种模式会分别保留手选位置。认证失败不会新建恢复目录或写入明文。
 
@@ -77,9 +77,9 @@ Extraction and decryption default to **Restore original filename and format**. A
 
 ## 图片与凭据 / Images and credentials
 
-隐写图片需保留像素原样；截图、裁剪、缩放、转换 JPEG 或平台重压缩可能导致认证失败。建议作为原始文件传输。随机布局不代表无法检测。丢失正确口令或密钥后没有恢复后门。
+PNG 隐写图片需保留像素原样；截图、裁剪、缩放、转换 JPEG 或平台重压缩可能导致认证失败。GIF 则需保留应用扩展块，不能仅靠画面相同判断隐藏数据是否还在。建议作为原始文件传输。随机布局不代表无法检测。丢失正确口令或密钥后没有恢复后门。
 
-Preserve the PNG's original pixels. Screenshots, cropping, resizing, JPEG conversion or platform recompression can break authentication. Transfer the original file. Random placement does not guarantee undetectability. There is no recovery backdoor for lost credentials.
+Preserve the PNG's original pixels. Screenshots, cropping, resizing, JPEG conversion or platform recompression can break authentication. GIF requires its application extension to remain intact; matching pictures alone do not establish that the hidden data remains. Transfer the original file. Random placement does not guarantee undetectability. There is no recovery backdoor for lost credentials.
 
 桌面和服务默认预算为 **25,000,000 像素**、**256 MiB 文件载荷**和 **512 MiB 完整恢复容器**。小像素 PNG 也可能带大量附加数据，三个限制不能互相替代。超过恢复预算不代表文件损坏：请勿缩放、裁剪或重新保存原隐写图片。提取、解密与验证页可展开高级恢复设置，查看输入大小；验证／查看信息还显示临时空间需求及可用空间。
 
@@ -93,9 +93,9 @@ After input selection, file size and temporary-space information are probed in t
 
 Extraction/decryption additionally enforce the service budget on the actual opened handle and bound read requests in both output modes, without another complete temporary copy. Core decoding/restoration/peek APIs accept optional `max_container_bytes`; omitting it preserves previous direct-core/CLI behavior while pixel/payload limits remain. This is not a filesystem snapshot.
 
-桌面可调上限为 **100,000,000 像素 / 1024 MiB 载荷 / 4096 MiB 容器**，属于界面允许值，不代表设备一定能够处理。预算只留在当前窗口的表单，不保存到偏好；超过默认值须勾选设备资源确认，变更输入、数值或结束任务会清除确认。先检查容量、再设置口令可减少重复输入；所有任务结束后仍会清理各页口令，包含无需口令的容量预检。内存提示和可用磁盘空间都是估算或当时状态；其他程序可能继续占用资源，实际写入空间不足仍会报错并清理临时副本。本版仍为内存处理，并未新增流式加密。
+桌面可调上限为 **100,000,000 像素 / 1024 MiB 载荷 / 4096 MiB 容器**，属于界面允许值，不代表设备一定能够处理。预算只留在当前窗口的表单，不保存到偏好；超过默认值须勾选设备资源确认，变更输入、数值或结束任务会清除确认。建议先检查容量、再设置口令；预检和失败重试不会清空已填口令。内存提示和可用磁盘空间都是估算或当时状态；其他程序可能继续占用资源，实际写入空间不足仍会报错并清理临时副本。本版仍为内存处理，并未新增流式加密。
 
-GUI ceilings are **100,000,000 pixels / 1024 MiB payload / 4096 MiB container**, not promises that every device can process them. Values remain in the current window only. Exceeding defaults requires resource acknowledgement, which clears when the input or limits change or a task finishes. Check capacity before entering a password; all jobs still clear password fields, including password-free preflight. Memory figures are estimates and disk availability can change after inspection; a later out-of-space error is still reported and the temporary copy is cleaned up. This release does not add streaming encryption.
+GUI ceilings are **100,000,000 pixels / 1024 MiB payload / 4096 MiB container**, not promises that every device can process them. Values remain in the current window only. Exceeding defaults requires resource acknowledgement, which clears when the input or limits change or a task finishes. Checking capacity before entering credentials remains convenient; preflight and failed retries preserve filled password fields. Memory figures are estimates and disk availability can change after inspection; a later out-of-space error is still reported and the temporary copy is cleaned up. This release does not add streaming encryption.
 
 ## 从源码运行 / Run from source
 
@@ -112,9 +112,9 @@ Use `requirements-gui.txt` for the app, Qt-free `requirements-dev.txt` for core 
 
 ## 测试与打包 / Test and build
 
-1.4.1 的最终运行结果与边界见 [docs/RELIABILITY_1.4.1.md](docs/RELIABILITY_1.4.1.md)。测试使用合成文件；完整源码测试、Windows 原生交互、离屏缩放模拟及源码／EXE 自检分别记录，不相加冒充单次测试数量。Qt 可访问名称检查不代表完成屏幕阅读器或所有物理显示器缩放认证。公开工件规则见 [docs/RELEASE.md](docs/RELEASE.md)。
+1.5.1 的实际运行结果与边界见 [docs/RELIABILITY_1.5.1.md](docs/RELIABILITY_1.5.1.md)，此前版本文档保留历史结果。测试使用合成文件；完整源码测试、Windows 原生交互及源码／EXE 自检分别记录，不相加冒充单次测试数量。Qt 可访问名称检查不代表完成屏幕阅读器或所有物理显示器缩放认证。公开工件规则见 [docs/RELEASE.md](docs/RELEASE.md)。
 
-See `docs/RELIABILITY_1.4.1.md` for current measured results and limits. Full-source, native Windows interaction, offscreen scaling and source/EXE self-tests are separate runs using synthetic data. Qt accessibility-name checks do not certify a screen reader or every physical monitor configuration. The 1.4.0 counts in `docs/RECOVERY_1.4.0.md` remain historical records.
+See `docs/RELIABILITY_1.5.1.md` for current measured results and limits and `docs/GIF_1.5.0.md` for the GIF protocol. Full-source, native Windows interaction and source/EXE self-tests are separate runs using synthetic data. Qt accessibility-name checks do not certify a screen reader or every physical monitor configuration. Earlier versioned reports remain historical records.
 
 双击 `运行测试.bat` 执行完整测试；命令行可选 `运行测试.bat core --no-pause` 或 `运行测试.bat full --no-pause`。入口只使用项目 `.venv`，缺失时创建它，并在其中安装所选模式的依赖，不向全局 Python 安装。测试失败的退出码会原样保留，暂停不会把失败变成成功。
 
@@ -166,11 +166,11 @@ Replace the example path with your own test directory. The check uses temporary 
 完成当前版本的干净构建与合成数据验证后，运行：
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\package_project.py --output releases\MoyleSteg-1.4.1-Full-Project.zip
+.\.venv\Scripts\python.exe scripts\package_project.py --output releases\MoyleSteg-1.5.1-Full-Project.zip
 ```
 
 打包脚本只纳入明确白名单中的源码、测试、资源、许可与公开说明，并保留当前便携运行目录，包括 `_internal/base_library.zip`。本地 `artifacts/`、私人数据、Git/虚拟环境/构建缓存、旧发布 ZIP 和本机调查报告不属于公开包。仅三份指定的历史格式合成测试夹具可位于 `tests/fixtures/`；真实 `.saes` 或 `.stegkey` 不随包发布。
 
 The packager includes allowlisted source, tests, assets, licenses and public documentation plus the current portable runtime. It excludes local reports, private data, development caches and old releases. The named legacy test fixtures contain synthetic data only. Nothing is uploaded.
 
-`SHA256SUMS.txt` 是首次导入 v1.0 文件的历史校验清单，不代表当前源码未变化。原始基线保存在维护者 Git 提交 `1e3026a73822e65d236e2f2b158713262f8705b1` 中；每个公开 ZIP 的 `RELEASE_MANIFEST.json` 记录本次实际文件大小与 SHA-256。当前变更、验证边界与五张合成截图见 [docs/RELIABILITY_1.4.1.md](docs/RELIABILITY_1.4.1.md)；其余版本化文档保留历史结果。依赖许可见 `THIRD_PARTY_NOTICES.md` 和便携包 `_internal/third_party_licenses/`。
+`SHA256SUMS.txt` 是首次导入 v1.0 文件的历史校验清单，不代表当前源码未变化。原始基线保存在维护者 Git 提交 `1e3026a73822e65d236e2f2b158713262f8705b1` 中；每个公开 ZIP 的 `RELEASE_MANIFEST.json` 记录本次实际文件大小与 SHA-256。当前变更与验证边界见 [docs/RELIABILITY_1.5.1.md](docs/RELIABILITY_1.5.1.md)，五张合成展示图见 [docs/RELIABILITY_1.4.1.md](docs/RELIABILITY_1.4.1.md)；其余版本化文档保留历史结果。依赖许可见 `THIRD_PARTY_NOTICES.md` 和便携包 `_internal/third_party_licenses/`。

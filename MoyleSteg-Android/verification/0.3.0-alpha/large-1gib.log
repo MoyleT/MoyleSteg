@@ -1,0 +1,2 @@
+Picked up JAVA_TOOL_OPTIONS: -Djava.io.tmpdir=<build-runtime>/temp -Duser.home=<build-runtime>/home -XX:-UsePerfData -Dfile.encoding=UTF-8
+PASS 1073741824-byte random SAES file roundtrip and read-only verification; heap=134217728, seconds=109.5008156

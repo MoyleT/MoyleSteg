@@ -1,0 +1,73 @@
+PASS key file format and fingerprint
+PASS known header and derived keys key
+PASS known header and derived keys password
+PASS desktop layout positions.256.256
+PASS desktop layout positions.8193.617
+PASS desktop layout positions.4096.4096
+PASS desktop layout positions.10000.1
+PASS desktop layout positions.11.0
+PASS desktop layout positions.4500.4499
+PASS PNG preserves RGB in fully transparent pixels
+PASS Python to Kotlin empty_key.saes
+PASS Python to Kotlin empty_key.png
+PASS Kotlin outputs and in-process roundtrip empty_key
+PASS Python to Kotlin empty_password.saes
+PASS Python to Kotlin empty_password.png
+PASS Kotlin outputs and in-process roundtrip empty_password
+PASS Python to Kotlin random_key.saes
+PASS Python to Kotlin random_key.png
+PASS Kotlin outputs and in-process roundtrip random_key
+PASS Python to Kotlin random_password.saes
+PASS Python to Kotlin random_password.png
+PASS Kotlin outputs and in-process roundtrip random_password
+PASS Python to Kotlin compressed_key.saes
+PASS Python to Kotlin compressed_key.png
+PASS Kotlin outputs and in-process roundtrip compressed_key
+PASS Python to Kotlin compressed_password.saes
+PASS Python to Kotlin compressed_password.png
+PASS Kotlin outputs and in-process roundtrip compressed_password
+PASS Python to Kotlin unicode_key.saes
+PASS Python to Kotlin unicode_key.png
+PASS Kotlin outputs and in-process roundtrip unicode_key
+PASS Python to Kotlin unicode_password.saes
+PASS Python to Kotlin unicode_password.png
+PASS Kotlin outputs and in-process roundtrip unicode_password
+PASS wrong key rejected
+PASS wrong credential mode rejected
+PASS wrong password rejected
+PASS ciphertext corruption rejected
+PASS truncated and appended SAES rejected
+PASS header CRC corruption rejected
+PASS CRC-correct AAD forgery rejected
+PASS untrusted huge length rejected
+PASS unsupported KDF rejected before derivation
+PASS decoded payload budget
+PASS input container budget
+PASS pixel budget
+PASS safe output names
+PASS empty password rejected
+PASS payload input budget
+PASS capacity preflight agrees
+PASS capacity refusal without auto resize
+PASS nonce and salt fresh per operation
+PASS cooperative cancellation
+PASS PNG filter 0
+PASS PNG filter 1
+PASS PNG filter 2
+PASS PNG filter 3
+PASS PNG filter 4
+PASS PNG rejects palette.png
+PASS PNG rejects gray.png
+PASS PNG rejects interlaced.png
+PASS PNG rejects badcrc.png
+PASS PNG rejects truncated.png
+PASS PNG rejects apng.png
+PASS PNG RGB/tRNS rgb
+PASS PNG RGB/tRNS rgb-trns
+PASS bounded input exact boundary
+PASS bounded input over boundary
+PASS bounded input empty and unknown length
+PASS bounded input repeated zero progress
+PASS bounded hash exact and overflow
+PASS zlib exact and trailing bytes
+RESULT: 72 tests passed

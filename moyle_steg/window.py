@@ -57,6 +57,7 @@ class MainWindow(QMainWindow):
         self.last_result = None
         self._result_page = None
         self._active_page = None
+        self._successful_credential_page = None
         self._input_versions = {}
         self._active_input_version = None
         self._first_show = True
@@ -440,6 +441,9 @@ class MainWindow(QMainWindow):
             cover = self._file(files, key, 'cover', 'cover', 'images_filter')
             payload = self._file(files, key, 'input', 'payload')
             files.addWidget(self._label('transport_note', 'muted'))
+            form['gif_hint'] = self._label('gif_note', 'muted')
+            form['gif_hint'].hide()
+            files.addWidget(form['gif_hint'])
             form['preflight'] = self._bind(QPushButton(), 'run_preflight')
             form['preflight'].setObjectName('hide_preflight')
             form['preflight'].clicked.connect(lambda: self.start_operation('hide', preflight=True))
@@ -474,6 +478,8 @@ class MainWindow(QMainWindow):
             cover.path_changed.connect(lambda: self._preview_timer.start())
             payload.path_changed.connect(lambda: self._preview_timer.start())
             cover.path_changed.connect(self._invalidate_preflight)
+            cover.path_changed.connect(self._cover_changed)
+            cover.path_changed.connect(lambda: self._input_changed('hide'))
             payload.path_changed.connect(self._invalidate_preflight)
         elif key in ('extract', 'crypt', 'verify'):
             files = self._card(layout, 'files_card')
@@ -553,7 +559,7 @@ class MainWindow(QMainWindow):
             fill_label.setBuddy(form['fill'])
             fill_row.addWidget(form['fill'])
             output.addLayout(fill_row)
-            form['resize'].toggled.connect(form['fill'].setEnabled)
+            form['resize'].toggled.connect(lambda checked: form['fill'].setEnabled(checked and not self._cover_is_gif()))
             form['resize'].toggled.connect(self._invalidate_preflight)
             form['fill'].valueChanged.connect(self._invalidate_preflight)
         form['force'] = self._bind(QCheckBox(), 'overwrite')
@@ -712,7 +718,7 @@ class MainWindow(QMainWindow):
             return
         path = Path(source)
         if key == 'hide':
-            suggestion = path.with_name(path.stem + '_hidden.png')
+            suggestion = path.with_name(path.stem + ('_hidden.gif' if self._cover_is_gif() else '_hidden.png'))
         elif self._automatic_restore(key):
             suffix = '_recovered' if key == 'extract' else '_decrypted'
             suggestion = path.with_name(path.stem + suffix)
@@ -747,7 +753,7 @@ class MainWindow(QMainWindow):
             dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
             dialog.setOption(QFileDialog.Option.DontConfirmOverwrite, True)
             if filter_key == 'png_filter':
-                dialog.setDefaultSuffix('png')
+                dialog.setDefaultSuffix('gif' if field is self.forms['hide'].get('output') and self._cover_is_gif() else 'png')
             elif filter_key == 'key_filter':
                 dialog.setDefaultSuffix('stegkey')
         else:
@@ -843,6 +849,28 @@ class MainWindow(QMainWindow):
             self._payload_bytes = None
         self._render_preview()
 
+    def _cover_is_gif(self):
+        """Read only the signature for presentation; the worker validates the full file."""
+        value = self.forms['hide']['cover'].edit.text().strip()
+        if not value:
+            return False
+        try:
+            with Path(value).open('rb') as stream:
+                return stream.read(6) in (b'GIF87a', b'GIF89a')
+        except OSError:
+            return False
+
+    def _cover_changed(self, *unused):
+        form = self.forms['hide']
+        gif = self._cover_is_gif()
+        form['gif_hint'].setVisible(gif)
+        if 'resize' in form:
+            form['resize'].setEnabled(not gif)
+            form['fill'].setEnabled(not gif and form['resize'].isChecked())
+        if 'output' in form:
+            self._suggest_output('hide')
+        self._render_preview()
+
     @staticmethod
     def _size(value):
         value = float(value)
@@ -861,6 +889,9 @@ class MainWindow(QMainWindow):
             dimensions = f'{width:,} × {height:,} px'
             capacity = self._size(width * height * 3 // 8)
         payload = self._size(self._payload_bytes) if self._payload_bytes is not None else '—'
+        if self._cover_is_gif():
+            self.preview_details.setText(self.t('gif_preview', dimensions=dimensions, payload=payload))
+            return
         self.preview_details.setText(f"{self.t('dimensions')}  {dimensions}\n{self.t('capacity_label')}  {capacity}\n{self.t('payload_size')}  {payload}")
 
     def _invalidate_preflight(self, *unused):
@@ -875,6 +906,13 @@ class MainWindow(QMainWindow):
             self.preflight_label.setText(self.t('preflight_unchecked'))
             return
         values = self._preflight_result.details
+        if values.get('container_format') == 'gif':
+            self.preflight_label.setText(self.t('gif_preflight', frames=values['frame_count'],
+                width=values['width'], height=values['height'], size=self._size(values['output_bytes'])) +
+                '\n\n' + self.t('preflight_fits' if values['fits'] == 'yes' else 'preflight_no_fit',
+                    required=self._size(values['ciphertext_bytes']), capacity=self._size(values['capacity'])) +
+                '\n\n' + self.t('gif_note'))
+            return
         summary = self.t('preflight_fits' if values['fits'] == 'yes' else 'preflight_no_fit',
                          required=self._size(values['ciphertext_bytes']), capacity=self._size(values['capacity']))
         resources = self.t('preflight_resources', width=values['width'], height=values['height'],
@@ -979,6 +1017,7 @@ class MainWindow(QMainWindow):
         self._started_at = time.monotonic()
         self._active_operation = operation
         self._active_page = page_key
+        self._successful_credential_page = None
         self._active_input_version = self._input_versions.get(page_key, 0)
         self._stage = 'wait'
         self._stage_completed = self._stage_total = None
@@ -1019,6 +1058,10 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, thread.acknowledge_resources)
 
     def _succeeded(self, result):
+        # Inspect authenticates content too. Capacity checks and key generation
+        # do not consume any form password, and must not clear unrelated pages.
+        if self._active_page is not None and result.operation in {'hide', 'encrypt', 'extract', 'decrypt', 'verify', 'inspect'}:
+            self._successful_credential_page = self._active_page
         if self._active_page is not None and self._input_versions.get(self._active_page, 0) != self._active_input_version:
             self.last_result = None
             self._set_feedback('input_unverified' if result.operation in ('verify', 'inspect', 'extract', 'decrypt') else 'input_changed_ready')
@@ -1066,6 +1109,13 @@ class MainWindow(QMainWindow):
         if not self._error_messages:
             self._error_messages = {self.language: message}
 
+    def _clear_page_credentials(self, page_key):
+        form = self.forms[page_key]
+        if 'password' in form:
+            form['password'].clear()
+            form['confirm'].clear()
+            form['show'].setChecked(False)
+
     def _finished(self):
         # Unlock only on QThread.finished, never on its result/error signal.
         self.busy = False
@@ -1076,12 +1126,13 @@ class MainWindow(QMainWindow):
         self.cancel_button.hide()
         for key, form in self.forms.items():
             self.pages[key].setEnabled(True)
-            if 'password' in form:
-                form['password'].clear()
-                form['confirm'].clear()
-                form['show'].setChecked(False)
             if 'budget' in form:
                 form['budget'].confirm.setChecked(False)
+        # Leave the live fields in place on failure/cancellation so retrying or
+        # manually clearing them needs no second copy of the password in memory.
+        if self._successful_credential_page is not None:
+            self._clear_page_credentials(self._successful_credential_page)
+        self._successful_credential_page = None
         thread = self._thread
         self._thread = None
         self._active_page = None
@@ -1166,7 +1217,7 @@ class MainWindow(QMainWindow):
                     rendered = f'{float(rendered):.2%}'
                 except ValueError:
                     pass
-            if key in ('original_size', 'stored_size', 'capacity', 'input_size', 'ciphertext_bytes', 'estimated_peak_bytes'):
+            if key in ('original_size', 'stored_size', 'capacity', 'input_size', 'ciphertext_bytes', 'estimated_peak_bytes', 'output_bytes'):
                 try:
                     rendered = self._size(rendered)
                 except ValueError:
@@ -1202,5 +1253,7 @@ class MainWindow(QMainWindow):
             self.cancel_operation()
             event.ignore()
         else:
+            for page_key in self.forms:
+                self._clear_page_credentials(page_key)
             QApplication.instance().removeTranslator(self._translator)
             event.accept()

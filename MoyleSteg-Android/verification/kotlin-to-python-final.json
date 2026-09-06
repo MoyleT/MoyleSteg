@@ -1,0 +1,118 @@
+{
+  "kotlin_to_python_cases": 16,
+  "all_passed": true,
+  "results": [
+    {
+      "file": "empty_key.png",
+      "mode": "key",
+      "bytes": 0,
+      "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pass": true
+    },
+    {
+      "file": "empty_key.saes",
+      "mode": "key",
+      "bytes": 0,
+      "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pass": true
+    },
+    {
+      "file": "empty_password.png",
+      "mode": "password",
+      "bytes": 0,
+      "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pass": true
+    },
+    {
+      "file": "empty_password.saes",
+      "mode": "password",
+      "bytes": 0,
+      "restored_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pass": true
+    },
+    {
+      "file": "random_key.png",
+      "mode": "key",
+      "bytes": 3073,
+      "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+      "pass": true
+    },
+    {
+      "file": "random_key.saes",
+      "mode": "key",
+      "bytes": 3073,
+      "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+      "pass": true
+    },
+    {
+      "file": "random_password.png",
+      "mode": "password",
+      "bytes": 3073,
+      "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+      "pass": true
+    },
+    {
+      "file": "random_password.saes",
+      "mode": "password",
+      "bytes": 3073,
+      "restored_sha256": "defc703d81e6c2bb214a31ccafaf93e7a8e9de53bc1ddf7cc63cbef78021cefa",
+      "pass": true
+    },
+    {
+      "file": "compressed_key.png",
+      "mode": "key",
+      "bytes": 13500,
+      "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+      "pass": true
+    },
+    {
+      "file": "compressed_key.saes",
+      "mode": "key",
+      "bytes": 13500,
+      "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+      "pass": true
+    },
+    {
+      "file": "compressed_password.png",
+      "mode": "password",
+      "bytes": 13500,
+      "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+      "pass": true
+    },
+    {
+      "file": "compressed_password.saes",
+      "mode": "password",
+      "bytes": 13500,
+      "restored_sha256": "0946201737fd6d8b8e59787fe7e0d5176def2dd43a7456929ce08caf4f3aa120",
+      "pass": true
+    },
+    {
+      "file": "unicode_key.png",
+      "mode": "key",
+      "bytes": 620,
+      "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+      "pass": true
+    },
+    {
+      "file": "unicode_key.saes",
+      "mode": "key",
+      "bytes": 620,
+      "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+      "pass": true
+    },
+    {
+      "file": "unicode_password.png",
+      "mode": "password",
+      "bytes": 620,
+      "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+      "pass": true
+    },
+    {
+      "file": "unicode_password.saes",
+      "mode": "password",
+      "bytes": 620,
+      "restored_sha256": "2f2c1221891ab8c31088609a15b1a844efcd79e86035b1cc992237544367994d",
+      "pass": true
+    }
+  ]
+}

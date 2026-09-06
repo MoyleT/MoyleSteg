@@ -475,6 +475,99 @@ def _verify_digest_association(kind, container, source, work, *, password="", ke
             "same_size": True, "mtime_restored": True, "outcome": outcome}
 
 
+def _gif_diagnostic_checks(work, *, password, key_path):
+    """Exercise the packaged GIF parser, writer, verifier and original-name recovery."""
+    from png_steg_aes256 import OperationControl
+    from .service import OperationRequest, execute
+
+    cover = work / "synthetic-animation.gif"
+    original = work / "GIF诊断原名.txt"
+    original.write_text("Synthetic GIF diagnostic / 动画原名恢复。\n" * 20, encoding="utf-8")
+    frames = []
+    for index in range(3):
+        frame = Image.new("RGBA", (48, 32), (0, 0, 0, 0))
+        frame.paste((220, 40 + index * 60, 110, 255), (4 + index * 8, 5, 15 + index * 8, 24))
+        frames.append(frame)
+    try:
+        frames[0].save(cover, format="GIF", save_all=True, append_images=frames[1:],
+                       duration=[40, 90, 130], loop=2, disposal=[2, 3, 2], transparency=0)
+    finally:
+        for frame in frames:
+            frame.close()
+    original_bytes = original.read_bytes()
+    original_hash = hashlib.sha256(original_bytes).hexdigest()
+    animation_bytes = cover.read_bytes()
+    checks, results = [], {}
+    # Read-only verification creates an encrypted temporary copy. Keep this
+    # diagnostic copy beside its other synthetic files, even in a frozen EXE.
+    previous_tempdir = tempfile.tempdir
+    tempfile.tempdir = str(work)
+    try:
+        for mode in ("password", "key_file"):
+            label = "password" if mode == "password" else "key"
+            credentials = {"credential_mode": mode,
+                "password": password if mode == "password" else "",
+                "password_confirm": password if mode == "password" else "",
+                "key_path": str(key_path) if mode == "key_file" else ""}
+            container = work / ("diagnostic-gif-" + label + ".gif")
+            stages = []
+            hidden = execute(OperationRequest(operation="hide", input_path=str(original),
+                cover_path=str(cover), output_path=str(container), **credentials),
+                control=OperationControl(lambda stage, done, total: stages.append(stage)))
+            if (hidden.details.get("container_format") != "gif" or hidden.details.get("frame_count") != "3"
+                    or "verify.decrypt" not in stages or "commit" not in stages
+                    or stages.index("verify.decrypt") >= stages.index("commit")):
+                raise AssertionError("GIF hiding did not authenticate the saved temporary output before commit")
+            checks.append("gif_" + label + "_saved_readback_authenticated")
+
+            output_bytes = container.read_bytes()
+            if (cover.read_bytes() != animation_bytes or output_bytes[:6] != b"GIF89a"
+                    or output_bytes[6:len(animation_bytes)-1] != animation_bytes[6:-1]):
+                raise AssertionError("GIF hiding changed original animation bytes")
+            durations, disposals = [], []
+            with Image.open(cover) as source, Image.open(container) as saved:
+                if source.n_frames != saved.n_frames or saved.n_frames != 3 or saved.info.get("loop") != source.info.get("loop"):
+                    raise AssertionError("GIF frame count or loop metadata changed")
+                for frame in range(source.n_frames):
+                    source.seek(frame)
+                    saved.seek(frame)
+                    if (source.info.get("duration") != saved.info.get("duration")
+                            or source.disposal_method != saved.disposal_method
+                            or source.convert("RGBA").tobytes() != saved.convert("RGBA").tobytes()):
+                        raise AssertionError("GIF decoded frame, delay or disposal changed")
+                    durations.append(saved.info.get("duration"))
+                    disposals.append(saved.disposal_method)
+            checks.append("gif_" + label + "_animation_preserved")
+
+            directory = work / ("gif-restored-" + label)
+            restored = execute(OperationRequest(operation="extract", input_path=str(container),
+                output_directory=str(directory), **credentials))
+            target = Path(restored.output_path)
+            if (target != directory / original.name or target.read_bytes() != original_bytes
+                    or restored.details.get("payload_sha256") != original_hash):
+                raise AssertionError("GIF restoration changed the original name, extension or content")
+            checks.append("gif_" + label + "_original_filename_roundtrip")
+
+            before = set(work.rglob("*"))
+            verified = execute(OperationRequest(operation="verify", input_path=str(container), **credentials))
+            container_hash = hashlib.sha256(output_bytes).hexdigest()
+            if (verified.output_path or set(work.rglob("*")) != before
+                    or verified.details.get("verified") != "yes" or verified.details.get("container_format") != "gif"
+                    or verified.details.get("payload_sha256") != original_hash
+                    or verified.details.get("input_sha256") != container_hash):
+                raise AssertionError("GIF read-only verification lost digest association or created recovery files")
+            checks.append("gif_" + label + "_readonly_digests")
+            results[label] = {"via": "service", "synthetic_only": True,
+                "original_filename": original.name, "restored_filename": target.name,
+                "bytes_equal": True, "sha256": original_hash, "container_sha256": container_hash,
+                "frame_count": 3, "loop": 2, "durations_ms": durations, "disposal_methods": disposals,
+                "animation_bytes_unchanged": True, "decoded_frames_equal": True,
+                "saved_authenticated_before_commit": True, "readonly_digests_match": True}
+    finally:
+        tempfile.tempdir = previous_tempdir
+    return checks, results
+
+
 def self_test(app, report_path: Path) -> int:
     report_path = report_path.resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -483,7 +576,7 @@ def self_test(app, report_path: Path) -> int:
               "runtime": "frozen" if frozen else "source", "qt_platform": app.platformName(),
               "python": platform.python_version(), "status": "failed", "checks": [],
               "rendering": {}, "appearance": {}, "roundtrips": {}, "verification_association": {},
-              "verification_context": {}, "verification_input_change": {}}
+              "verification_context": {}, "verification_input_change": {}, "gif_roundtrips": {}}
     window = None
     try:
         # No user data is used. Settings and disposable files stay under the
@@ -674,6 +767,9 @@ def self_test(app, report_path: Path) -> int:
                     key_path=key if kind == "saes" else "")
                 report["checks"].append("verify_digest_association_" + kind)
 
+            gif_checks, report["gif_roundtrips"] = _gif_diagnostic_checks(work, password=password, key_path=key)
+            report["checks"].extend(gif_checks)
+
             # Cancel through the visible button immediately after starting a
             # password operation, before its commit. No thread is terminated.
             cancel_source, cancel_output = work / "cancel-test.txt", work / "cancel-test.saes"
@@ -691,12 +787,34 @@ def self_test(app, report_path: Path) -> int:
             _wait_until(app, lambda: not window.busy, description="safe cancellation")
             if cancel_output.exists() or window.last_result is not None or window._feedback_key != "cancelled":
                 raise AssertionError("Cancelled task unexpectedly published output or failed")
-            if any(form["password"].text() for form in window.forms.values() if "password" in form):
-                raise AssertionError("Credentials were retained after cancellation")
+            password_retained = form["password"].text() == password
+            confirmation_retained = form["confirm"].text() == password
+            if not password_retained or not confirmation_retained:
+                raise AssertionError("Cancellation discarded the credentials needed to retry")
+            report['credential_lifecycle'] = {
+                'cancel_password_retained': password_retained,
+                'cancel_confirmation_retained': confirmation_retained,
+            }
             report["checks"].append("ui_safe_cancel")
+            report['checks'].append('ui_cancel_keeps_retry_credentials')
             report['compact_large'] = _capture_compact_large(app, window, report_path)
             report['checks'].extend('ui_compact_large_hide_' + language for language in ('zh_CN', 'en_US'))
-            window.close()
+            credential_forms = [entry for entry in window.forms.values() if 'password' in entry]
+            for entry in credential_forms:
+                _set_credentials(entry, password)
+                entry['show'].setChecked(False)
+            populated = all(entry['password'].text() == password and entry['confirm'].text() == password
+                            for entry in credential_forms)
+            if not populated or not window.close():
+                raise AssertionError("Could not exercise credential cleanup on window close")
+            cleared = all(not entry['password'].text() and not entry['confirm'].text()
+                          for entry in credential_forms)
+            if not cleared:
+                raise AssertionError("Closing the window retained form credentials")
+            # Keep only boolean evidence; never include the synthetic password in the report.
+            report['credential_lifecycle'].update(all_pages_populated_before_close=populated,
+                                                  all_pages_cleared_after_close=cleared)
+            report['checks'].append('ui_close_clears_all_credentials')
             window.deleteLater()
             window = None
             app.processEvents()

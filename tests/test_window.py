@@ -58,7 +58,7 @@ def test_keygen_async_and_result_retranslation(qtbot, tmp_path):
     assert '256-bit random key' not in window.result_text.text()
 
 
-def test_passwords_cleared_after_async_failure(qtbot, tmp_path):
+def test_passwords_preserved_for_retry_after_async_failure(qtbot, tmp_path):
     window = make_window(qtbot, tmp_path)
     source = tmp_path / 'bad.saes'
     source.write_bytes(b'not encrypted')
@@ -71,7 +71,7 @@ def test_passwords_cleared_after_async_failure(qtbot, tmp_path):
     form['password'].setText('example password')
     form['run'].click()
     qtbot.waitUntil(lambda: not window.busy, timeout=15000)
-    assert form['password'].text() == ''
+    assert form['password'].text() == 'example password'
     assert form['run'].isEnabled()
     assert not (tmp_path / 'out.txt').exists()
 

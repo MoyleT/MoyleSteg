@@ -12,6 +12,7 @@ import binascii
 import getpass
 import hashlib
 import hmac
+import io
 import math
 import os
 import struct
@@ -28,6 +29,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from PIL import Image, ImageOps, UnidentifiedImageError
+import gif_carrier
 
 KEY_FILE_HEADER = "PNG-STEG-AES256-KEY-V1"
 KEY_BYTES = 32
@@ -254,6 +256,9 @@ class HideResult:
     sha256_hex: str
     credential_mode: int
     algorithm: str = "AES-256-GCM"
+    container_format: str = "png"
+    frame_count: int = 1
+    output_bytes: int = 0
 
 
 def generate_key_file(path: Path, *, force: bool = False,
@@ -845,16 +850,154 @@ class PreflightResult:
     resource_level: str
     reason: str
     exact: bool = True
+    container_format: str = "png"
+    frame_count: int = 1
+    output_bytes: int = 0
+
+
+def is_gif_file(path: Path) -> bool:
+    """Signature-only dispatch; processing validates the final captured input."""
+    with Path(path).open("rb", buffering=0) as handle:
+        return gif_carrier.is_gif(handle.read(6))
+
+
+def _gif_budget(limit: int | None) -> int:
+    value = gif_carrier.DEFAULT_MAX_CONTAINER_BYTES if limit is None else limit
+    _check_container_budget(0, value)
+    return value
+
+
+def _gif_saes_header(data: bytes, max_file_bytes: int) -> Header:
+    header = _parse_header(data[:HEADER_SIZE])
+    if header.ciphertext_length > _ciphertext_limit(max_file_bytes):
+        raise StegError("GIF 密文超过处理资源上限")
+    return header
+
+
+def _capture_gif(path: Path, *, max_pixels: int, max_container_bytes: int | None,
+                 max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
+                 allow_payload: bool = True, require_payload: bool = False,
+                 control: OperationControl) -> tuple[bytes, gif_carrier.GifInfo]:
+    budget = _gif_budget(max_container_bytes)
+    with Path(path).open("rb", buffering=0) as handle:
+        reader = _ContainerReader(handle, budget)
+        captured = _read_bounded(reader, budget, control, "read_gif")
+    try:
+        info = gif_carrier.scan(captured, max_pixels=max_pixels, max_container_bytes=budget,
+            max_payload_bytes=HEADER_SIZE + _ciphertext_limit(max_file_bytes),
+            allow_payload=allow_payload, require_payload=require_payload, check=control.check,
+            validate_payload_header=lambda data: HEADER_SIZE + _gif_saes_header(data, max_file_bytes).ciphertext_length)
+    except gif_carrier.GifResourceError as exc:
+        raise StegError(str(exc)) from exc
+    except gif_carrier.GifError as exc:
+        raise StegError(str(exc)) from exc
+    # Parse and apply animation budgets before a decoder can allocate frame pixels.
+    try:
+        with Image.open(io.BytesIO(captured)) as image:
+            if image.format != "GIF":
+                raise StegError("载体不是 GIF")
+            for frame in range(info.frame_count):
+                control.report("gif_frames", frame, info.frame_count)
+                image.seek(frame)
+                image.load()
+            control.report("gif_frames", info.frame_count, info.frame_count)
+    except (UnidentifiedImageError, EOFError, OSError, ValueError) as exc:
+        raise StegError("GIF 动画数据无效或被截断") from exc
+    return captured, info
+
+
+def gif_cover_info(path: Path, *, max_pixels: int = DEFAULT_MAX_PIXELS,
+                   max_container_bytes: int | None = None,
+                   control: OperationControl | None = None) -> gif_carrier.GifInfo:
+    """Read validated animation metadata; any returned payload is unauthenticated."""
+    _validate_limits(DEFAULT_MAX_FILE_BYTES, max_pixels)
+    return _capture_gif(path, max_pixels=max_pixels, max_container_bytes=max_container_bytes,
+                        control=_control(control))[1]
+
+
+def _gif_preflight(info: gif_carrier.GifInfo, cover_bytes: int, plain_bytes: int,
+                   original: int, stored: int, compressed: bool, budget: int) -> PreflightResult:
+    length = plain_bytes + 16
+    capacity = gif_carrier.ciphertext_capacity(cover_bytes, budget, HEADER_SIZE)
+    output_bytes = gif_carrier.output_size(cover_bytes, HEADER_SIZE + length)
+    estimate = cover_bytes * 3 + output_bytes * 2 + original * 6 + length * 4 + info.width * info.height * 12
+    level = "high" if estimate >= 1024**3 else "moderate" if estimate >= 256 * 1024**2 else "low"
+    fits = output_bytes <= budget
+    return PreflightResult(original, stored, compressed, length, capacity, info.width, info.height,
+        length / capacity if capacity else 1.0, fits, estimate, level,
+        "" if fits else "container", container_format="gif", frame_count=info.frame_count, output_bytes=output_bytes)
+
+
+def _hide_gif(cover_path: Path, secret_path: Path, output_path: Path, *, credential: Credential,
+              force: bool, verify: bool, max_pixels: int, max_file_bytes: int,
+              max_container_bytes: int | None, protected: tuple[Path, ...],
+              control: OperationControl) -> HideResult:
+    budget = _gif_budget(max_container_bytes)
+    captured, info = _capture_gif(cover_path, max_pixels=max_pixels, max_container_bytes=budget,
+        max_file_bytes=max_file_bytes, allow_payload=False, control=control)
+    plaintext, compressed, original, stored, digest = _build_plaintext(secret_path,
+        max_file_bytes=max_file_bytes, control=control)
+    plan = _gif_preflight(info, len(captured), len(plaintext), original, stored, compressed, budget)
+    if not plan.fits:
+        raise ContainerResourceLimitError()
+    header = _build_header(credential.mode, os.urandom(16), os.urandom(12), plan.ciphertext_bytes)
+    control.report("derive")
+    encryption_key, _ = _derive_keys(credential, header)
+    control.report("encrypt")
+    saes = _serialize_header(header) + AESGCM(encryption_key).encrypt(header.nonce, plaintext, header.core)
+    control.report("embed_gif", 0, len(saes))
+    output = gif_carrier.embed(captured, info, saes, max_container_bytes=budget, check=control.check)
+    control.report("embed_gif", len(saes), len(saes))
+
+    def verify_saved(temp_path: Path) -> None:
+        checked = decode_image(temp_path, credential=credential, max_pixels=max_pixels,
+            max_file_bytes=max_file_bytes, max_container_bytes=budget, control=control.child("verify"))
+        if checked.sha256_hex != digest or checked.original_size != original or checked.filename != secret_path.name:
+            raise StegError("保存后自检失败")
+
+    _atomic_write(output_path, output, force=force, protected_paths=protected,
+        control=control, verifier=verify_saved if verify else None)
+    return HideResult(output_path, info.width, info.height, plan.capacity_bytes,
+        plan.ciphertext_bytes, plan.fill_ratio, compressed, original, stored, digest, credential.mode,
+        container_format="gif", frame_count=info.frame_count, output_bytes=len(output))
+
+
+def _decode_gif(path: Path, *, credential: Credential, max_pixels: int,
+                 max_file_bytes: int, max_container_bytes: int | None,
+                 control: OperationControl) -> DecodedPayload:
+    _, info = _capture_gif(path, max_pixels=max_pixels, max_container_bytes=max_container_bytes,
+        max_file_bytes=max_file_bytes, require_payload=True, control=control)
+    container = info.payload
+    header = _gif_saes_header(container, max_file_bytes)
+    if len(container) != HEADER_SIZE + header.ciphertext_length:
+        raise StegError("GIF 内的 SAES 长度与头部声明不一致")
+    control.report("derive")
+    key, _ = _derive_keys(credential, header)
+    control.report("decrypt")
+    try:
+        plaintext = AESGCM(key).decrypt(header.nonce, container[HEADER_SIZE:], header.core)
+    except InvalidTag as exc:
+        raise AuthenticationError("认证失败：口令/密钥错误，或 GIF 加密载荷已损坏") from exc
+    return _parse_plaintext(plaintext, header.mode, max_file_bytes=max_file_bytes, control=control)
 
 
 def preflight_hide(cover_path: Path, secret_path: Path, *, auto_resize: bool = False,
                    max_fill: float = 1.0, max_pixels: int = DEFAULT_MAX_PIXELS,
                    max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
+                   max_container_bytes: int | None = None,
                    control: OperationControl | None = None) -> PreflightResult:
     """Perform actual compression; memory usage remains an estimate, not a quota."""
     _validate_limits(max_file_bytes, max_pixels)
     control = _control(control)
     control.report("preflight")
+    if is_gif_file(cover_path):
+        captured, info = _capture_gif(cover_path, max_pixels=max_pixels,
+            max_container_bytes=max_container_bytes, max_file_bytes=max_file_bytes,
+            allow_payload=False, control=control)
+        plaintext, compressed, original, stored, _ = _build_plaintext(
+            secret_path, max_file_bytes=max_file_bytes, control=control)
+        return _gif_preflight(info, len(captured), len(plaintext), original, stored,
+                              compressed, _gif_budget(max_container_bytes))
     size = cover_dimensions(cover_path, max_pixels=max_pixels)
     plaintext, compressed, original, stored, _ = _build_plaintext(
         secret_path, max_file_bytes=max_file_bytes, control=control)
@@ -882,18 +1025,25 @@ def hide_file(
     force: bool = False,
     verify: bool = True,
     max_file_bytes: int = DEFAULT_MAX_FILE_BYTES,
+    max_container_bytes: int | None = None,
     control: OperationControl | None = None,
 ) -> HideResult:
     cover_path = Path(cover_path)
     secret_path = Path(secret_path)
     output_path = Path(output_path)
-    if output_path.suffix.lower() != ".png":
-        raise ValueError("输出文件必须使用 .png 扩展名")
+    gif_input = is_gif_file(cover_path)
+    extension = ".gif" if gif_input else ".png"
+    if output_path.suffix.lower() != extension:
+        raise ValueError(f"输出文件必须使用 {extension} 扩展名")
     protected = _protected(credential, cover_path, secret_path)
     validate_operation_paths(inputs=protected, output=output_path, force=force)
     _validate_limits(max_file_bytes, max_pixels)
     control = _control(control)
     control.report("preflight")
+    if gif_input:
+        return _hide_gif(cover_path, secret_path, output_path, credential=credential,
+            force=force, verify=verify, max_pixels=max_pixels, max_file_bytes=max_file_bytes,
+            max_container_bytes=max_container_bytes, protected=protected, control=control)
     size = cover_dimensions(cover_path, max_pixels=max_pixels)
     plaintext, compressed, original_size, stored_size, sha256_hex = _build_plaintext(
         secret_path, max_file_bytes=max_file_bytes, control=control)
@@ -913,6 +1063,8 @@ def hide_file(
 
     try:
         with Image.open(cover_path) as source:
+            if source.format == "GIF":
+                raise InputChangedError()
             _check_pixels(source.size, max_pixels)
             control.report("image")
             source = ImageOps.exif_transpose(source)
@@ -996,6 +1148,10 @@ def _read_header_from_raw(raw: bytearray, width: int, height: int) -> Header:
 def peek_header(image_path: Path, *, max_pixels: int = DEFAULT_MAX_PIXELS,
                 max_container_bytes: int | None = None,
                 control: OperationControl | None = None) -> Header:
+    if is_gif_file(image_path):
+        _, info = _capture_gif(image_path, max_pixels=max_pixels, max_container_bytes=max_container_bytes,
+            require_payload=True, control=_control(control))
+        return _gif_saes_header(info.payload, DEFAULT_MAX_FILE_BYTES)
     (width, height), raw = _open_rgba_bytes(Path(image_path), max_pixels=max_pixels,
         max_container_bytes=max_container_bytes, control=control)
     return _read_header_from_raw(raw, width, height)
@@ -1007,6 +1163,9 @@ def decode_image(image_path: Path, *, credential: Credential,
                  control: OperationControl | None = None) -> DecodedPayload:
     _validate_limits(max_file_bytes, max_pixels)
     control = _control(control)
+    if is_gif_file(image_path):
+        return _decode_gif(image_path, credential=credential, max_pixels=max_pixels,
+            max_file_bytes=max_file_bytes, max_container_bytes=max_container_bytes, control=control)
     (width, height), raw = _open_rgba_bytes(Path(image_path), max_pixels=max_pixels,
         max_container_bytes=max_container_bytes, control=control)
     header = _read_header_from_raw(raw, width, height)
@@ -1294,9 +1453,16 @@ def _credential_for_write(args: argparse.Namespace) -> tuple[Credential, Path | 
         if Path(source).stat().st_size > max_file_bytes:
             raise StegError("文件超过资源上限")
     if getattr(args, "command", None) == "hide":
-        if output.suffix.lower() != ".png":
-            raise ValueError("输出文件必须使用 .png 扩展名")
-        cover_dimensions(args.cover, max_pixels=args.max_pixels)
+        gif_input = is_gif_file(args.cover)
+        extension = ".gif" if gif_input else ".png"
+        if output.suffix.lower() != extension:
+            raise ValueError(f"输出文件必须使用 {extension} 扩展名")
+        if gif_input:
+            _capture_gif(args.cover, max_pixels=args.max_pixels,
+                max_container_bytes=getattr(args, "max_container_bytes", None),
+                max_file_bytes=max_file_bytes, allow_payload=False, control=OperationControl())
+        else:
+            cover_dimensions(args.cover, max_pixels=args.max_pixels)
     if getattr(args, "new_key_file", None) is not None:
         key_path: Path = args.new_key_file
         key = generate_key_file(key_path, force=False,
@@ -1348,17 +1514,17 @@ def _print_payload(decoded: DecodedPayload) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="AES-256-GCM 文件加密 + 密钥随机全图 PNG LSB 隐写工具",
+        description="AES-256-GCM 文件加密 + PNG LSB 隐写 / GIF 动画扩展载体",
         formatter_class=argparse.RawTextHelpFormatter,
     )
-    parser.add_argument("--version", action="version", version="png-steg-aes256 1.4.1 (format v1)")
+    parser.add_argument("--version", action="version", version="png-steg-aes256 1.5.1 (format v1; GIF extension 001)")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     p = subparsers.add_parser("keygen", help="生成随机 256-bit 密钥文件")
     p.add_argument("output", type=Path)
     p.add_argument("--force", action="store_true", help="覆盖已有密钥文件")
 
-    p = subparsers.add_parser("capacity", help="查看 PNG 载体可用容量")
+    p = subparsers.add_parser("capacity", help="查看 PNG 像素容量 / GIF 容器预算容量")
     p.add_argument("image", type=Path)
 
     p = subparsers.add_parser("encrypt", help="仅做 AES-256-GCM 文件加密，输出 .saes")
@@ -1374,12 +1540,12 @@ def build_parser() -> argparse.ArgumentParser:
     _add_credential_arguments(p, allow_new_key=False)
     p.add_argument("--force", action="store_true", help="覆盖已有输出")
 
-    p = subparsers.add_parser("hide", help="加密文件并随机分散隐写到 PNG")
+    p = subparsers.add_parser("hide", help="加密文件到 PNG 像素 / 可播放 GIF 应用扩展")
     p.add_argument("cover", type=Path)
     p.add_argument("secret", type=Path)
     p.add_argument("output", type=Path)
     _add_credential_arguments(p, allow_new_key=True)
-    p.add_argument("--auto-resize", action="store_true", help="容量不足时保持比例自动放大载体")
+    p.add_argument("--auto-resize", action="store_true", help="仅 PNG：容量不足时保持比例自动放大载体；GIF 不改变尺寸")
     p.add_argument(
         "--max-fill",
         type=float,
@@ -1395,11 +1561,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force", action="store_true", help="覆盖已有输出")
     p.add_argument("--force-key", action="store_true", help="已禁用：组合任务只能新建密钥；替换密钥请单独使用 keygen --force")
 
-    p = subparsers.add_parser("info", help="验证并查看隐写 PNG 内的加密文件信息")
+    p = subparsers.add_parser("info", help="验证并查看 PNG/GIF 内的加密文件信息")
     p.add_argument("image", type=Path)
     _add_credential_arguments(p, allow_new_key=False)
 
-    p = subparsers.add_parser("extract", help="从 PNG 提取、认证并解密文件")
+    p = subparsers.add_parser("extract", help="从 PNG/GIF 提取、认证并解密文件")
     p.add_argument("image", type=Path)
     p.add_argument("output", type=Path, nargs="?", help="默认恢复原文件名")
     _add_credential_arguments(p, allow_new_key=False)
@@ -1412,6 +1578,9 @@ def build_parser() -> argparse.ArgumentParser:
         if name in {"capacity", "info", "extract"}:
             command.add_argument("--max-pixels", type=int, default=DEFAULT_MAX_PIXELS,
                                  help="图片像素资源上限，默认 25,000,000")
+        if name in {"capacity", "hide", "info", "extract"}:
+            command.add_argument("--max-container-bytes", type=int, default=None,
+                                 help="完整容器字节预算；GIF 默认 64 MiB，输出包含扩展开销")
     return parser
 
 
@@ -1434,6 +1603,17 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "capacity":
+            if is_gif_file(args.image):
+                info = gif_cover_info(args.image, max_pixels=args.max_pixels,
+                                      max_container_bytes=args.max_container_bytes)
+                if info.payload is not None:
+                    raise StegError("载体已含 MoyleSteg 载荷；请选择原始 GIF")
+                capacity = gif_carrier.ciphertext_capacity(info.trailer_offset + 1,
+                                                          _gif_budget(args.max_container_bytes), HEADER_SIZE)
+                print(f"GIF 尺寸：{info.width} × {info.height}；帧数：{info.frame_count}")
+                print(f"当前容器预算下可用 AES 密文容量：{_format_bytes(capacity)}")
+                print("方式：GIF89a 应用扩展封装 SAES；不修改动画像素、帧时序或尺寸。")
+                return 0
             try:
                 width, height = cover_dimensions(args.image, max_pixels=args.max_pixels)
             except UnidentifiedImageError as exc:
@@ -1502,8 +1682,9 @@ def main(argv: list[str] | None = None) -> int:
                 max_pixels=args.max_pixels,
                 max_file_bytes=args.max_file_bytes,
                 force=args.force,
+                max_container_bytes=args.max_container_bytes,
             )
-            print(f"已生成三合一隐写 PNG：{result.output_path}")
+            print(f"已生成加密载体 {result.container_format.upper()}：{result.output_path}")
             print(f"算法：{result.algorithm}")
             print(f"凭据模式：{_mode_name(result.credential_mode)}")
             if key_path is not None:
@@ -1517,15 +1698,19 @@ def main(argv: list[str] | None = None) -> int:
             print(f"容量占用率：{result.fill_ratio:.2%}")
             print(f"预压缩：{'是（zlib）' if result.compressed else '否'}")
             print(f"SHA-256：{result.sha256_hex}")
-            print("主体密文已按独立布局密钥随机分散到全图 RGB 通道；Alpha 未修改。")
+            if result.container_format == "gif":
+                print(f"动画帧数：{result.frame_count}；完整输出：{_format_bytes(result.output_bytes)}")
+                print("SAES 密文已封装到 GIF 应用扩展；动画字节保持，不使用像素 LSB。")
+            else:
+                print("主体密文已按独立布局密钥随机分散到全图 RGB 通道；Alpha 未修改。")
             print("保存后提取、AES-GCM 认证和 SHA-256 自检：通过")
             return 0
 
         if args.command == "info":
-            header = peek_header(args.image, max_pixels=args.max_pixels)
+            header = peek_header(args.image, max_pixels=args.max_pixels, max_container_bytes=args.max_container_bytes)
             credential, key_path, fingerprint = _credential_for_read(args, header.mode)
             decoded = decode_image(args.image, credential=credential, max_pixels=args.max_pixels,
-                                   max_file_bytes=args.max_file_bytes)
+                                   max_file_bytes=args.max_file_bytes, max_container_bytes=args.max_container_bytes)
             if key_path is not None:
                 print(f"密钥文件：{key_path}")
                 print(f"密钥指纹：{fingerprint}")
@@ -1533,7 +1718,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "extract":
-            header = peek_header(args.image, max_pixels=args.max_pixels)
+            header = peek_header(args.image, max_pixels=args.max_pixels, max_container_bytes=args.max_container_bytes)
             credential, key_path, fingerprint = _credential_for_read(args, header.mode)
             output, decoded = extract_file(
                 args.image,
@@ -1542,6 +1727,7 @@ def main(argv: list[str] | None = None) -> int:
                 force=args.force,
                 max_pixels=args.max_pixels,
                 max_file_bytes=args.max_file_bytes,
+                max_container_bytes=args.max_container_bytes,
             )
             print(f"已提取并解密：{output}")
             if key_path is not None:

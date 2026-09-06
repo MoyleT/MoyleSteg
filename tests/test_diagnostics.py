@@ -146,6 +146,14 @@ def test_runtime_self_test_produces_bilingual_render_and_real_roundtrip_report(q
             "ui_zh_CN", "ui_en_US"} <= set(result["checks"])
     assert {"ui_png_original_filename_roundtrip", "ui_saes_original_filename_roundtrip"} <= set(result["checks"])
     assert {"ui_exact_preflight", "ui_verify_png", "ui_verify_saes", "ui_safe_cancel"} <= set(result["checks"])
+    assert {'ui_cancel_keeps_retry_credentials', 'ui_close_clears_all_credentials'} <= set(result['checks'])
+    assert result['credential_lifecycle'] == {
+        'cancel_password_retained': True,
+        'cancel_confirmation_retained': True,
+        'all_pages_populated_before_close': True,
+        'all_pages_cleared_after_close': True,
+    }
+    assert 'Moyle diagnostic password' not in report.read_text(encoding='utf-8')
     assert {"verify_digest_association_png", "verify_digest_association_saes"} <= set(result["checks"])
     for kind in ("png", "saes"):
         association = result["verification_association"][kind]

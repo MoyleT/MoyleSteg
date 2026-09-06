@@ -1,0 +1,40 @@
+{
+  "apk": {
+    "bytes": 15052703,
+    "sha256": "4aae3ce3560a5d562fd0f12e5abf7268643fa39a3d6c04caa5deaeb61232a981",
+    "version": "0.1.2-alpha",
+    "versionCode": 3,
+    "minSdk": 26,
+    "targetSdk": 36,
+    "test_fixtures_and_private_key_files": "absent"
+  },
+  "apk-signature": "passed",
+  "apk-badging": "passed",
+  "gradle-kotlin-to-python": "passed",
+  "expanded-kotlin-to-python": "passed",
+  "android_host_tests": [
+    {
+      "name": "com.moyle.steg.android.AutoExpandViewModelTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.DocumentStoreRegressionTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
+      "name": "com.moyle.steg.android.SelectionRegressionTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0"
+    }
+  ],
+  "lint": {
+    "Warning": 6
+  },
+  "syntax": "all Python tools and Android source XML parsed",
+  "device_execution": "not run; Robolectric host tests are not device UI tests"
+}

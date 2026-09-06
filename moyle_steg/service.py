@@ -49,6 +49,7 @@ from png_steg_aes256 import (
     image_capacity_bytes,
     preflight_hide,
     cover_dimensions,
+    gif_cover_info,
     validate_operation_paths,
 )
 
@@ -219,6 +220,15 @@ def _execute(request: OperationRequest, *, control: OperationControl | None = No
     if operation == "capacity":
         image_path = _required_input(request.cover_path or request.input_path, "image")
         control.report("image")
+        with image_path.open('rb') as stream:
+            gif = stream.read(6) in (b'GIF87a', b'GIF89a')
+        if gif:
+            info = gif_cover_info(image_path, max_pixels=request.max_pixels,
+                                  max_container_bytes=request.max_container_bytes, control=control)
+            return OperationResult(operation=operation, title="capacity_success", details={
+                "width": str(info.width), "height": str(info.height), "frame_count": str(info.frame_count),
+                "container_format": "gif", "algorithm": "GIF application extension",
+            })
         width, height = cover_dimensions(image_path, max_pixels=request.max_pixels)
         control.report("image", 1, 1)
         return OperationResult(
@@ -239,7 +249,7 @@ def _execute(request: OperationRequest, *, control: OperationControl | None = No
     if operation == "preflight":
         result = preflight_hide(cover_path, input_path, auto_resize=request.auto_resize,
             max_fill=request.max_fill, max_pixels=request.max_pixels,
-            max_file_bytes=request.max_file_bytes, control=control)
+            max_file_bytes=request.max_file_bytes, max_container_bytes=request.max_container_bytes, control=control)
         return OperationResult(operation=operation, title="preflight_success", details={
             "original_size": str(result.original_size), "stored_size": str(result.stored_size),
             "compressed": _bool_name(result.compressed), "ciphertext_bytes": str(result.ciphertext_bytes),
@@ -248,6 +258,8 @@ def _execute(request: OperationRequest, *, control: OperationControl | None = No
             "fits": _bool_name(result.fits), "exact": _bool_name(result.exact),
             "estimated_peak_bytes": str(result.estimated_peak_bytes),
             "resource_level": result.resource_level, "reason": result.reason,
+            "container_format": result.container_format, "frame_count": str(result.frame_count),
+            "output_bytes": str(result.output_bytes),
         })
     credential = _credential(request, for_write=operation in _PASSWORD_WRITE_OPERATIONS)
 
@@ -288,6 +300,7 @@ def _execute(request: OperationRequest, *, control: OperationControl | None = No
             max_fill=request.max_fill,
             max_pixels=request.max_pixels,
             max_file_bytes=request.max_file_bytes,
+            max_container_bytes=request.max_container_bytes,
             force=request.force,
             control=control,
         )
@@ -392,6 +405,10 @@ def _verify(request, input_path, credential, control):
         elif signature == MAGIC:
             kind = "saes"
             _checked_container_header(original, request.max_file_bytes)
+        elif signature[:6] in (b"GIF87a", b"GIF89a"):
+            # Bounded capture comes first. Parsing/authentication then use only
+            # that captured copy, preserving the relationship between both hashes.
+            kind = "gif"
         else:
             raise _ValidationError("unsupported_container", "不支持的加密容器")
         original.seek(0)
@@ -426,9 +443,10 @@ def _verify(request, input_path, credential, control):
                 raise changed()
             check_original()
 
-            if kind == "png":
+            if kind in {"png", "gif"}:
                 decoded = decode_image(captured, credential=credential, max_pixels=request.max_pixels,
-                                       max_file_bytes=request.max_file_bytes, control=control)
+                                       max_file_bytes=request.max_file_bytes,
+                                       max_container_bytes=request.max_container_bytes, control=control)
             else:
                 decoded = decode_encrypted_file(captured, credential=credential,
                                                 max_file_bytes=request.max_file_bytes, control=control)
@@ -501,6 +519,9 @@ def friendly_error(exc: Exception, language: str = "zh_CN") -> str:
 
     raw = str(exc)
     if isinstance(exc, ValueError):
+        if "输出文件必须使用" in raw:
+            return ("Match the output extension to the carrier: .gif for GIF, .png for other images."
+                    if english else "请让输出后缀与载体匹配：GIF 使用 .gif，其他图片使用 .png。")
         if "不一致" in raw or "do not match" in raw.lower():
             return (
                 "The passwords do not match. Enter the same password twice."
@@ -521,6 +542,9 @@ def friendly_error(exc: Exception, language: str = "zh_CN") -> str:
             else "请求参数无效，请检查所选文件和设置。"
         )
     if isinstance(exc, StegError):
+        if "GIF" in raw and ("已含" in raw or "多个" in raw or "版本" in raw):
+            return ("This GIF contains an existing, duplicate or unsupported MoyleSteg extension. Choose the original carrier or check the producing app version."
+                    if english else "GIF 含已有、重复或不支持版本的 MoyleSteg 扩展。隐藏时请选择原始载体，恢复时请核对生成端版本。")
         if "资源上限" in raw or "安全解码上限" in raw or "像素数超过" in raw:
             return (
                 "The file exceeds the processing resource limit. Use a smaller file or image."
@@ -558,23 +582,23 @@ def friendly_error(exc: Exception, language: str = "zh_CN") -> str:
 
 _VALIDATION_MESSAGES: dict[str, tuple[str, str]] = {
     "recovery_resource_limit": (
-        "文件超过当前恢复预算。请勿缩放、裁剪或重新保存原隐写 PNG；确认设备资源充足后，可提高恢复预算。",
-        "The file exceeds the current recovery budget. Do not resize, crop, or re-save the original steganographic PNG. Increase the recovery budget only after confirming sufficient device resources.",
+        "文件超过当前恢复预算。请勿缩放、裁剪或重新保存原隐写 PNG／GIF；确认设备资源充足后，可提高恢复预算。",
+        "The file exceeds the current recovery budget. Do not resize, crop, or re-save the original steganographic PNG/GIF. Increase the recovery budget only after confirming sufficient device resources.",
     ),
     "source_resource_limit": (
         "文件或载体超过当前处理预算。请选择更小的秘密文件或合适尺寸的载体；确认设备资源充足后也可调整预算。",
         "The secret file or cover exceeds the current processing budget. Choose a smaller secret file or a suitably sized cover, or adjust the budget after confirming sufficient device resources.",
     ),
     "container_resource_limit": (
-        "完整容器超过当前容器字节预算。请保留原文件，勿缩放、裁剪或重新保存原隐写 PNG；确认设备和临时磁盘资源充足后，可提高容器预算。",
-        "The complete container exceeds the container byte budget. Preserve the original file; do not resize, crop, or re-save the steganographic PNG. Increase the container budget only after checking device and temporary disk resources.",
+        "完整容器超过当前容器字节预算。请保留原文件，勿缩放、裁剪或重新保存原隐写 PNG／GIF；确认设备和临时磁盘资源充足后，可提高容器预算。",
+        "The complete container exceeds the container byte budget. Preserve the original file; do not resize, crop, or re-save the steganographic PNG/GIF. Increase the container budget only after checking device and temporary disk resources.",
     ),
     "container_budget_invalid": ("容器预算必须为大于零的整数字节数。", "The container budget must be a positive integer number of bytes."),
     "temporary_space": (
         "临时磁盘可用空间不足，无法安全验证完整容器。请释放系统临时目录所在磁盘的空间后重试；保留原隐写文件，不要缩放或重新保存。",
         "The temporary disk has insufficient free space to verify the complete container safely. Free space on the system temporary volume and try again. Preserve the original steganographic file without resizing or re-saving it.",
     ),
-    "unsupported_container": ("请选择本工具生成的 PNG 或 SAES 加密文件。", "Select a PNG or SAES encrypted container created by this tool."),
+    "unsupported_container": ("请选择本工具生成的 PNG、GIF 或 SAES 加密文件。", "Select a PNG, GIF or SAES encrypted container created by this tool."),
     "input_changed": ("读取期间输入文件发生变化，请等待文件保存或同步完成后重试。", "The input changed while being read. Wait for saving or syncing to finish, then try again."),
     "unknown_operation": ("不支持此操作。", "This operation is not supported."),
     "output_required": ("必须明确选择输出路径。", "Choose an explicit output path."),
@@ -749,6 +773,9 @@ def _hide_details(filename: str, result: HideResult) -> dict[str, str]:
         "fill_ratio": f"{result.fill_ratio:.6f}",
         "credential_mode": _mode_name(result.credential_mode),
         "algorithm": result.algorithm,
+        "container_format": result.container_format,
+        "frame_count": str(result.frame_count),
+        "output_bytes": str(result.output_bytes),
     }
 
 
