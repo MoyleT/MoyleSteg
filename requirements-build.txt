@@ -1,0 +1,4 @@
+-r requirements-gui.txt
+pytest>=8.0
+pytest-qt>=4.4
+pyinstaller>=6.15,<7

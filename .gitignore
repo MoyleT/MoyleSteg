@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+build/
+dist/
+.superpowers/
+artifacts/
+*.stegkey
+*.saes
+!tests/fixtures/*.saes
+*.pyc
