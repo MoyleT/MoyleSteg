@@ -31,3 +31,16 @@ for scenario in ['growth','copy','initial','normal','cancel']:
     subprocess.run(['java','-Xmx64m','-cp',str(jar)+os.pathsep+str(a.bc_jar),'com.moyle.steg.core.BoundedReadMemoryRegression',scenario],check=True)
 
 subprocess.run(['java','-Xmx128m','-cp',str(jar)+os.pathsep+str(a.bc_jar),'com.moyle.steg.core.PixelCarrierRegression'],check=True)
+
+bundle_cases = [
+    ('BundleDiskRegression', '128m', [str(out/'bundle-disk-output')]),
+    ('MultiFileBundleRegression', '128m', [
+        str(out/'bundle-output'), str(r/'core/src/test/resources/bundle/python-bundle.zip')]),
+    ('MultiFileBundleRegression', '32m', [str(out/'bundle-output'), 'lowheap']),
+    ('BundleEnvelopeRegression', '256m', [
+        str(r/'core/src/test/resources/bundle'), str(r/'core/src/test/resources/gif/cover.gif'),
+        str(out/'bundle-envelope-output')]),
+]
+for main, heap, args in bundle_cases:
+    subprocess.run(['java', '-Xmx'+heap, '-cp', str(jar)+os.pathsep+str(a.bc_jar),
+                    'com.moyle.steg.core.'+main, *args], check=True)

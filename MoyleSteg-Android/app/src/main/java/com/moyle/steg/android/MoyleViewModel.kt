@@ -2,6 +2,8 @@ package com.moyle.steg.android
 
 import android.app.Application
 import android.net.Uri
+import android.os.CancellationSignal
+import android.os.OperationCanceledException
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.moyle.steg.core.*
@@ -17,6 +19,8 @@ enum class Operation(val title: String) {
     HIDE("隐藏文件"), RESTORE("恢复文件"), VERIFY("验证文件"), ENCRYPT("独立加密"), KEYGEN("生成密钥")
 }
 enum class DocSlot { INPUT, COVER, KEY }
+data class RestoredMember(val entry:BundleEntry,val selected:Boolean=true,
+    val saved:SavedDownload?=null,val error:String?=null)
 data class JobResult(
     val title: String,val inputLabel: String,val filename: String,val message: String,
     val contentHash: String="",val containerHash: String="",val at: String=now(),
@@ -24,12 +28,16 @@ data class JobResult(
     val protectedUris: List<Uri> = emptyList(),val outputHash: String="",val exportedUri: Uri?=null,
     val preflight: Preflight?=null,
     val restored: Boolean=false,val download: SavedDownload?=null,
-    val downloadIssue: String?=null,val needsStoragePermission: Boolean=false
+    val downloadIssue: String?=null,val needsStoragePermission: Boolean=false,
+    val bundle:BundleInfo?=null,val members:List<RestoredMember> = emptyList(),
+    val bundleBudget:Long=32L*1024*1024
 )
 fun now(): String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+data class DiscardRequest(val page:Int?,val operation:Operation?,val result:JobResult)
 data class UiState(
     val page: Int=0,val operation: Operation=Operation.HIDE,
     val input: PickedDocument?=null,val cover: PickedDocument?=null,val key: PickedDocument?=null,
+    val inputs:List<PickedDocument> = emptyList(),val inputSizes:Map<Uri,Long?> = emptyMap(),
     val useKey: Boolean=false,val password: String="",val confirmation: String="",val autoExpand: Boolean=true,
     val theme: String="midnight",val largeText: Boolean=false,
     val manualMemory:Boolean=false,val manualMemoryMiB:String="128",val resourceAcknowledged:Boolean=false,
@@ -37,13 +45,15 @@ data class UiState(
     val inputProbe:DocumentProbe?=null,val coverProbe:DocumentProbe?=null,
     val busy: Boolean=false,val selecting: Boolean=false,val stage: String="",val completed: Int=0,val total: Int=0,
     val error: String?=null,val result: JobResult?=null,
-    val downloadPermissionRequest: Long?=null
+    val downloadPermissionRequest: Long?=null,val discardRequest:DiscardRequest?=null
 )
 
 class MoyleViewModel @JvmOverloads constructor(application: Application,
     private val downloads: DownloadWriter=DownloadsExporter(application),
+    private val privateSpace:(File)->Long={it.usableSpace},
     private val memoryReader:()->MemorySnapshot={DeviceResources.snapshot(application)}): AndroidViewModel(application) {
-    private val docs=DocumentStore(application)
+    private val docs=DocumentStore(application,privateSpace)
+    private val bundleDisk=BundleDiskPolicy(privateSpace)
     private val prefs=application.getSharedPreferences("appearance",0)
     private val _state=MutableStateFlow(UiState(theme=prefs.getString("theme","midnight") ?: "midnight",largeText=prefs.getBoolean("large",false)))
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -51,6 +61,8 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
     private var job: Job?=null
     private var permissionSequence=0L
     private var permissionPending: Pair<Long,JobResult>?=null
+    private var exportSequence=0L
+    private var exportPending:Pair<Long,JobResult>?=null
     init { refreshResources() }
     fun refreshResources(){
         if(_state.value.busy)return
@@ -58,27 +70,77 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
         val planned=runCatching{MemoryPolicy.choose(observed,s.manualMemory,s.manualMemoryMiB.toIntOrNull() ?: 0)}
         _state.update{it.copy(memorySnapshot=observed,memoryPlan=planned.getOrNull(),resourceError=planned.exceptionOrNull()?.message)}
     }
-    fun manualMemory(value:Boolean){if(!_state.value.busy){clearResult();_state.update{it.copy(manualMemory=value,resourceAcknowledged=false)};refreshResources()}}
-    fun manualMemoryMiB(value:String){if(!_state.value.busy){clearResult();_state.update{it.copy(manualMemoryMiB=value.filter(Char::isDigit).take(4),resourceAcknowledged=false)};refreshResources()}}
+    fun manualMemory(value:Boolean){if(!_state.value.busy){_state.update{it.copy(manualMemory=value,resourceAcknowledged=false)};refreshResources()}}
+    fun manualMemoryMiB(value:String){if(!_state.value.busy){_state.update{it.copy(manualMemoryMiB=value.filter(Char::isDigit).take(4),resourceAcknowledged=false)};refreshResources()}}
     fun acknowledgeResources(value:Boolean){if(!_state.value.busy)_state.update{it.copy(resourceAcknowledged=value)}}
     // Accessed on the main thread. Each slot owns its latest metadata request.
     private var selectionSequence=0L
     private val selections=mutableMapOf<DocSlot,Long>()
+    private class SelectionTask(val signal:CancellationSignal=CancellationSignal(),var job:Job?=null){
+        fun cancel(){
+            job?.cancel()
+            // Provider cancellation and closing its stream may themselves block.
+            // Cancel our coroutine immediately, and dispatch that external work off UI.
+            Dispatchers.IO.dispatch(kotlin.coroutines.EmptyCoroutineContext,Runnable{signal.cancel()})
+        }
+    }
+    private val selectionTasks=mutableMapOf<DocSlot,SelectionTask>()
     private fun invalidateSelections() {
         selections.clear()
+        val old=selectionTasks.values.toList();selectionTasks.clear()
+        old.forEach{it.cancel()}
         _state.update { it.copy(selecting=false,resourceAcknowledged=false) }
+    }
+    private fun newSelection(slot:DocSlot):Pair<Long,SelectionTask>{
+        selections.remove(slot)
+        selectionTasks.remove(slot)?.cancel()
+        val revision=++selectionSequence;val task=SelectionTask()
+        selections[slot]=revision;selectionTasks[slot]=task
+        return revision to task
     }
     fun cancelSelection(){if(!_state.value.busy)invalidateSelections()}
     fun page(value: Int) {
-        if(_state.value.busy)return
-        invalidateSelections()
-        clearResult()
-        _state.update { it.copy(page=value,operation=when(value){0->Operation.HIDE;1->Operation.RESTORE;2->Operation.ENCRYPT;else->it.operation},password="",confirmation="",error=null) }
+        val s=_state.value
+        if(s.busy || value !in 0..3 || value==s.page)return
+        if(value==3 || value==operationPage(s.operation)){
+            _state.update{it.copy(page=value,password="",confirmation="",resourceAcknowledged=false,discardRequest=null)}
+            return
+        }
+        val next=when(value){0->Operation.HIDE;1->Operation.RESTORE;else->Operation.ENCRYPT}
+        requestNavigation(value,next)
     }
     fun operation(value: Operation) {
+        if(_state.value.busy || value==_state.value.operation)return
+        requestNavigation(operationPage(value),value)
+    }
+    fun operationPage(value:Operation=_state.value.operation):Int=when(value){
+        Operation.HIDE->0;Operation.RESTORE,Operation.VERIFY->1;else->2
+    }
+    private fun hasUnsavedResult(r:JobResult?):Boolean = r?.staged!=null && r.exportedUri==null &&
+        r.download==null && (r.bundle==null || r.members.any{it.saved==null})
+    private fun requestNavigation(page:Int,operation:Operation){
+        val result=_state.value.result
+        if(hasUnsavedResult(result)){
+            _state.update{it.copy(discardRequest=DiscardRequest(page,operation,result!!))}
+        }else applyNavigation(page,operation)
+    }
+    private fun applyNavigation(page:Int,operation:Operation){
+        invalidateSelections();clearResult();clearMultipleSelection()
+        _state.update{it.copy(page=page,operation=operation,password="",confirmation="",error=null)}
+    }
+    fun requestClearResult(){
         if(_state.value.busy)return
-        invalidateSelections()
-        clearResult();_state.update{it.copy(operation=value,password="",confirmation="",error=null)}
+        val result=_state.value.result
+        if(hasUnsavedResult(result))_state.update{it.copy(discardRequest=DiscardRequest(null,null,result!!))}
+        else clearResult()
+    }
+    fun keepCurrentWork(){_state.update{it.copy(discardRequest=null)}}
+    fun confirmDiscard(){
+        val s=_state.value;val pending=s.discardRequest ?: return
+        if(s.busy)return
+        if(s.result!==pending.result){keepCurrentWork();return}
+        if(pending.page!=null && pending.operation!=null)applyNavigation(pending.page,pending.operation)
+        else clearResult()
     }
     fun setPassword(value: String){if(!_state.value.busy)_state.update{it.copy(password=value.take(2048))}}
     fun setConfirmation(value: String){if(!_state.value.busy)_state.update{it.copy(confirmation=value.take(2048))}}
@@ -89,26 +151,30 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
     fun clearPasswords(){_state.update{it.copy(password="",confirmation="")}}
     fun clearResult(){if(!_state.value.busy){
         permissionPending=null
+        exportPending=null
         _state.value.result?.staged?.delete()
-        _state.update{it.copy(result=null,error=null,downloadPermissionRequest=null)}
+        _state.update{it.copy(result=null,error=null,downloadPermissionRequest=null,discardRequest=null)}
     }}
     fun requestCancel(){cancel.set(true);_state.update{it.copy(stage="正在等待安全取消点…")}}
     fun pick(slot: DocSlot,uri: Uri){
         if(_state.value.busy)return
         clearResult()
-        val revision=++selectionSequence
-        selections[slot]=revision
+        val (revision,task)=newSelection(slot)
         // Remove the previous input immediately; it cannot stand in for a pending selection.
         _state.update { state ->
-            val next=when(slot){DocSlot.INPUT->state.copy(input=null,inputProbe=null);DocSlot.COVER->state.copy(cover=null,coverProbe=null);DocSlot.KEY->state.copy(key=null)}
+            val next=when(slot){DocSlot.INPUT->state.copy(input=null,inputProbe=null,inputs=emptyList(),inputSizes=emptyMap());DocSlot.COVER->state.copy(cover=null,coverProbe=null);DocSlot.KEY->state.copy(key=null)}
             next.copy(selecting=true,error=null,resourceAcknowledged=false)
         }
-        viewModelScope.launch {
+        task.job=viewModelScope.launch(start=CoroutineStart.LAZY) {
             try{
                 val (doc,probe)=withContext(Dispatchers.IO){
-                    val described=docs.describe(uri)
+                    val ctx=currentCoroutineContext()
+                    val ctl=Control(cancelled={task.signal.isCanceled || !ctx.isActive})
+                    val described=docs.describe(uri,ctl,task.signal)
                     // A provider may supply metadata but not a preview stream. Actual jobs must still open and validate it.
-                    val probe=if(slot==DocSlot.KEY)null else try{docs.probe(described,Control())}catch(_:Exception){null}
+                    val probe=if(slot==DocSlot.KEY)null else try{docs.probe(described,ctl,task.signal)}catch(e:Exception){
+                        ctx.ensureActive();ctl.check();if(e is OperationCanceledException)throw e;null
+                    }
                     described to probe
                 }
                 if(selections[slot]==revision && !_state.value.busy){
@@ -116,15 +182,64 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
                     _state.update { when(slot){DocSlot.INPUT->it.copy(input=doc,inputProbe=probe);DocSlot.COVER->it.copy(cover=doc,coverProbe=probe);DocSlot.KEY->it.copy(key=doc)} }
                 }
             }catch(e: CancellationException){throw e}
+            catch(_:CancelledException){}
+            catch(_:OperationCanceledException){}
             catch(_: Exception){if(selections[slot]==revision)_state.update{it.copy(error="无法读取选择的文件，请重新选择。")}}
             finally{
                 if(selections[slot]==revision){
                     selections.remove(slot)
+                    selectionTasks.remove(slot)
                     _state.update{it.copy(selecting=selections.isNotEmpty())}
                 }
             }
         }
+        task.job!!.start()
     }
+    private fun clearMultipleSelection(){
+        if(_state.value.inputs.isNotEmpty())_state.update{it.copy(input=null,inputProbe=null,inputs=emptyList(),inputSizes=emptyMap())}
+    }
+    fun pickInputs(uris:List<Uri>){
+        val s=_state.value
+        if(s.busy || s.operation !in listOf(Operation.HIDE,Operation.ENCRYPT) || uris.isEmpty())return
+        val existing=s.inputs.ifEmpty{listOfNotNull(s.input)}
+        val merged=(existing.map{it.uri}+uris).distinct()
+        if(merged.size>100){_state.update{it.copy(error="一次最多选择 100 个文件。")};return}
+        clearResult()
+        val (revision,task)=newSelection(DocSlot.INPUT)
+        _state.update{it.copy(selecting=true,error=null,resourceAcknowledged=false)}
+        task.job=viewModelScope.launch(start=CoroutineStart.LAZY) {
+            try{
+                val items=withContext(Dispatchers.IO){
+                    val ctx=currentCoroutineContext()
+                    val ctl=Control(cancelled={task.signal.isCanceled || !ctx.isActive})
+                    merged.map{uri->
+                        ctl.check()
+                        val doc=docs.describe(uri,ctl,task.signal)
+                        val size=try{docs.probe(doc,ctl,task.signal).size}catch(e:Exception){
+                            ctx.ensureActive();ctl.check();if(e is OperationCanceledException)throw e;null
+                        }
+                        doc to size
+                    }
+                }
+                if(selections[DocSlot.INPUT]==revision && !_state.value.busy){
+                    _state.update{it.copy(input=items.first().first,inputProbe=null,inputs=items.map{p->p.first},
+                        inputSizes=items.associate{p->p.first.uri to p.second})}
+                }
+            }catch(e:CancellationException){throw e}
+            catch(_:CancelledException){}
+            catch(_:OperationCanceledException){}
+            catch(_:Exception){if(selections[DocSlot.INPUT]==revision)_state.update{it.copy(error="无法读取文件列表，原选择已保留。请重新选择。")}}
+            finally{if(selections[DocSlot.INPUT]==revision){selections.remove(DocSlot.INPUT);selectionTasks.remove(DocSlot.INPUT);_state.update{it.copy(selecting=selections.isNotEmpty())}}}
+        }
+        task.job!!.start()
+    }
+    fun removeInput(uri:Uri){
+        if(_state.value.busy)return
+        invalidateSelections();clearResult()
+        _state.update{val remaining=it.inputs.ifEmpty{listOfNotNull(it.input)}.filter{d->d.uri!=uri}
+            it.copy(inputs=remaining,input=remaining.firstOrNull(),inputProbe=null,inputSizes=it.inputSizes-uri)}
+    }
+    fun clearInputs(){if(!_state.value.busy){invalidateSelections();clearResult();_state.update{it.copy(inputs=emptyList(),input=null,inputProbe=null,inputSizes=emptyMap())}}}
     private fun control(context: kotlin.coroutines.CoroutineContext): Control {
         var last=0L;var lastStage=""
         return Control({ stage,done,total ->
@@ -155,13 +270,78 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
                     val ctl=control(currentCoroutineContext())
                     val processed=process(s,capacityOnly,ctl){staged=it}
                     if(s.operation==Operation.RESTORE && !capacityOnly)
-                        publishRestored(processed.copy(restored=true),ctl) else processed
+                        prepareRestored(processed.copy(restored=true),ctl) else processed
                 }
                 currentCoroutineContext().ensureActive()
                 deliverResult(result);delivered=true
             }catch(_: CancellationException){throw CancellationException()}
             catch(e: Exception){_state.update{it.copy(busy=false,error=if(e is StegException)e.message else "操作失败：请检查文件访问权限、存储空间及输入格式。",stage="未完成")}}
             finally{if(!delivered)staged?.delete();_state.update{it.copy(busy=false,password="",confirmation="",resourceAcknowledged=false)}}
+        }
+    }
+    private fun prepareRestored(r:JobResult,ctl:Control):JobResult {
+        val file=r.staged ?: throw StegException("没有可恢复的数据。")
+        val info=MultiFileBundle.inspect(file,r.bundleBudget,r.bundleBudget,ctl)
+            ?: return publishRestored(r,ctl)
+        return r.copy(title="已认证 ${info.entries.size} 个文件",bundle=info,
+            members=info.entries.map{RestoredMember(it)},mime="application/zip",suggestedName="MoyleSteg-files.zip",
+            message="选择需要的文件并保存到 Download。清空结果会移除私有临时包，已经保存的文件会保留。")
+    }
+    fun selectRestoredMember(index:Int,selected:Boolean){
+        if(_state.value.busy)return
+        permissionPending=null
+        _state.update{it.copy(downloadPermissionRequest=null,result=it.result?.let{r->
+            r.copy(needsStoragePermission=false,members=r.members.map{m->if(m.entry.index==index && m.saved==null)m.copy(selected=selected)else m})})}
+    }
+    fun selectAllRestoredMembers(selected:Boolean){
+        if(_state.value.busy)return
+        permissionPending=null
+        _state.update{it.copy(downloadPermissionRequest=null,result=it.result?.let{r->
+            r.copy(needsStoragePermission=false,members=r.members.map{m->if(m.saved==null)m.copy(selected=selected)else m})})}
+    }
+    fun saveBundleSelection(){
+        val initial=_state.value.result ?: return
+        val archive=initial.staged ?: return
+        if(initial.bundle==null || _state.value.busy || _state.value.selecting)return
+        val chosen=initial.members.filter{it.selected && it.saved==null}
+        if(chosen.isEmpty())return
+        permissionPending=null;cancel.set(false)
+        _state.update{it.copy(busy=true,error=null,stage="保存选中文件",downloadPermissionRequest=null)}
+        job=viewModelScope.launch {
+            var result=initial.copy(downloadIssue=null,needsStoragePermission=false)
+            var activeIndex:Int?=null
+            try{
+                withContext(Dispatchers.IO){
+                    val ctl=control(currentCoroutineContext())
+                    docs.validateStaged(archive,initial.outputHash,ctl)
+                    for(member in chosen){
+                        activeIndex=member.entry.index;ctl.check()
+                        ctl.report("保存文件 ${member.entry.index} / ${initial.members.size}")
+                        val file=MultiFileBundle.extract(archive,member.entry,docs.workDirectory(),initial.bundleBudget,initial.bundleBudget,ctl,bundleDisk)
+                        try{
+                            val mime=RestoredFileActions.mimeFor(file,member.entry.name)
+                            val saved=downloads.save(file,member.entry.name,mime,member.entry.sha256,ctl)
+                            // Persist each committed item before observing another cancellation checkpoint.
+                            result=result.copy(members=result.members.map{if(it.entry.index==member.entry.index)it.copy(saved=saved,selected=false,error=null)else it})
+                            _state.update{it.copy(result=result)}
+                        }finally{file.delete()}
+                    }
+                }
+                currentCoroutineContext().ensureActive()
+            }catch(e:CancellationException){throw e}
+            catch(e:Exception){
+                val issue=when(e){
+                    is DownloadPermissionException->e.message ?: "需要保存权限。"
+                    is CancelledException->"已停止保存；已完成的文件保留，剩余文件可直接重试。"
+                    is StegException->e.message ?: "文件尚未保存，请重试。"
+                    else->"保存未完成，请检查空间和权限。已完成的文件保留，剩余文件可直接重试。"
+                }
+                result=result.copy(downloadIssue=issue,needsStoragePermission=e is DownloadPermissionException,
+                    members=result.members.map{if(it.entry.index==activeIndex && it.saved==null)it.copy(error=issue)else it})
+            }finally{_state.update{it.copy(busy=false)}}
+            val count=result.members.count{it.saved!=null}
+            deliverResult(result.copy(title="已保存 $count / ${result.members.size} 个文件",at=now(),
+                message="文件保存到 Download，同名文件自动另取名称。可直接打开已保存项，或继续选择剩余文件。"))
         }
     }
     /** Both authentication and private staging have succeeded before any public file is created. */
@@ -208,6 +388,7 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
     }
     fun saveRestoredToDownloads(){
         val r=_state.value.result ?: return
+        if(r.bundle!=null){saveBundleSelection();return}
         if(!r.restored || r.staged==null || r.exportedUri!=null || _state.value.busy || _state.value.selecting)return
         permissionPending=null;cancel.set(false)
         _state.update{it.copy(busy=true,error=null,stage="保存到下载文件夹",downloadPermissionRequest=null)}
@@ -221,6 +402,54 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
     }
     fun reportOpenFailure(message:String){if(!_state.value.busy)_state.update{it.copy(error=message)}}
     private fun process(s: UiState,capacityOnly: Boolean,ctl: Control,onStaged: (File)->Unit): JobResult {
+        val sources=s.inputs
+        if(sources.size<2 || s.operation !in listOf(Operation.HIDE,Operation.ENCRYPT))return processSingle(s,capacityOnly,ctl,onStaged)
+        val budget=if(s.operation==Operation.ENCRYPT)FileLimits().maxPayloadBytes else 32L*1024*1024
+        var known=0L
+        for(source in sources){
+            val size=(s.inputSizes[source.uri] ?: 0L).coerceAtLeast(0L)
+            if(size>budget-known)throw StegException("文件总大小超过本次处理上限；图片使用 32 MiB，独立 SAES 使用 1 GiB。")
+            known+=size
+        }
+        val work=docs.workDirectory()
+        val plannedZip=MultiFileBundle.plannedArchiveBytes(known,sources.size,budget)
+        // ZIP capture + raw/compression candidates, or ZIP capture + encrypted output
+        // and its independent verification capture: at most 3 ZIP lengths + 128 KiB.
+        // The original ZIP itself is still present at that point. This estimate does
+        // not reserve storage; provider sizes may be unknown/stale and are rechecked.
+        val initialPeak=if(s.operation==Operation.ENCRYPT)
+            maxOf(known+plannedZip,4*plannedZip+128*1024) else known+plannedZip
+        ctl.report("检查多文件临时空间（估算 ${((initialPeak+1048575)/1048576)} MiB，另留 32 MiB）")
+        bundleDisk.requireAdditional(work,initialPeak)
+        val captured=mutableListOf<File>();var archive:File?=null
+        try{
+            var total=0L
+            val inputs=sources.mapIndexed{index,doc->
+                ctl.report("读取文件 ${index+1} / ${sources.size}")
+                val file=docs.captureFile(doc,(budget-total).coerceAtLeast(1L),ctl);captured.add(file)
+                total+=file.length()
+                if(total>budget)throw StegException("文件总大小超过处理预算。")
+                BundleSource(file,doc.name)
+            }
+            val pack=MultiFileBundle.create(inputs,work,budget,budget,ctl,bundleDisk);archive=pack.file
+            // The verified ZIP now owns the captured content; release duplicate inputs
+            // before the subsequent encryption workspace is allocated.
+            for(file in captured)if(file.exists() && !file.delete())throw StegException("无法清理已完成打包的私有输入副本。")
+            captured.clear()
+            if(s.operation==Operation.ENCRYPT){
+                ctl.report("检查加密暂存空间")
+                bundleDisk.requireAdditional(work,3*pack.info.archiveBytes+128*1024)
+            }
+            val guarded=Control(progress={stage,done,extent->ctl.report(stage,done,extent)},
+                cancelled={ctl.check();bundleDisk.requireAdditional(work,0);false})
+            val r=processSingle(s.copy(input=PickedDocument(Uri.fromFile(pack.file),"MoyleSteg-files.zip"),inputs=emptyList()),capacityOnly,guarded,onStaged)
+            return r.copy(inputLabel="${sources.size} 个文件："+sources.joinToString("、"){it.name},
+                protectedUris=(sources.map{it.uri}+listOfNotNull(s.cover?.uri,s.key?.uri)).distinct(),
+                message="${sources.size} 个文件 · 原始合计 ${pack.info.totalBytes} 字节 · 实际 ZIP ${pack.info.archiveBytes} 字节\n"+r.message)
+        }catch(e:java.io.IOException){throw bundleDisk.mapFailure(e)}
+        finally{captured.forEach{it.delete()};archive?.delete()}
+    }
+    private fun processSingle(s: UiState,capacityOnly: Boolean,ctl: Control,onStaged: (File)->Unit): JobResult {
         ctl.check()
         val observed=memoryReader()
         val plan=try{MemoryPolicy.choose(observed,s.manualMemory,s.manualMemoryMiB.toIntOrNull() ?: 0)}
@@ -371,9 +600,21 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
                     if(r.output==null)"已完整认证本次捕获的 SAES；原文摘要与容器摘要针对同一份数据。验证未生成明文文件。"
                     else "采用分块文件处理，原文件 ${MemoryPolicy.mib(r.originalBytes)} MiB。私有成品已验证；请另存为新文件，导出后还会回读校验。",
                     contentHash=r.payloadSha256,containerHash=r.containerSha256,staged=r.output,
-                    suggestedName=suggestion,protectedUris=protected,outputHash=if(encrypt)r.containerSha256 else r.payloadSha256)
+                    suggestedName=suggestion,protectedUris=protected,outputHash=if(encrypt)r.containerSha256 else r.payloadSha256,
+                    bundleBudget=fileLimits.maxPayloadBytes)
             }
         }finally{input.delete()}
+    }
+    fun requestExport():Long?{
+        val r=_state.value.result ?: return null
+        if(r.staged==null || _state.value.busy || _state.value.selecting)return null
+        return (++exportSequence).also{exportPending=it to r}
+    }
+    fun completeExport(token:Long,uri:Uri?){
+        val pending=exportPending ?: return
+        if(token!=pending.first)return
+        exportPending=null
+        if(uri!=null && _state.value.result===pending.second)export(uri)
     }
     fun export(uri: Uri){
         val r=_state.value.result ?: return
@@ -397,5 +638,5 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
             finally{_state.update{it.copy(busy=false)}}
         }
     }
-    override fun onCleared(){cancel.set(true);_state.value.result?.staged?.delete();super.onCleared()}
+    override fun onCleared(){cancel.set(true);invalidateSelections();_state.value.result?.staged?.delete();super.onCleared()}
 }

@@ -71,3 +71,36 @@ class JobThread(QThread):
             self.succeeded.emit(result)
         finally:
             self.request = None
+
+
+class BundleJobThread(JobThread):
+    """Publish from an authenticated session; credentials are never re-read."""
+    def __init__(self, result, indices, directory, language='zh_CN', parent=None, *, whole_archive=False):
+        super().__init__(OperationRequest(result.operation), language, parent)
+        self.result = result
+        self.indices = tuple(indices)
+        self.directory = directory
+        self.whole_archive = whole_archive
+
+    def run(self):
+        session = self.result.bundle
+        error = None
+        try:
+            control = OperationControl(progress=self._report_progress, cancelled=self._cancel_event.is_set)
+            if self.whole_archive:
+                session.save_archive(self.directory, control=control)
+            else:
+                session.save(self.indices, self.directory, control=control)
+        except OperationCancelled:
+            error = 'cancelled'
+        except Exception as exc:
+            error = exc
+        finally:
+            # Publish each committed path even after a later failure/cancellation.
+            title = 'bundle_partial' if error else 'bundle_saved'
+            self.succeeded.emit(replace(self.result, title=title,
+                       details={**self.result.details, 'saved_files': str(len(session.saved))}))
+            if isinstance(error, Exception):
+                self.error_messages = {lang: friendly_error(error, lang) for lang in ('zh_CN', 'en_US')}
+                self.failed.emit(self.error_messages[self.language])
+            self.request = None

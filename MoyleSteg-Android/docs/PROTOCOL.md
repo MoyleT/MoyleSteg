@@ -47,3 +47,11 @@ is allowed in extraction. It does not preserve ICC/EXIF/ancillary metadata on ou
 New salts/nonces and PNG compressor differences legitimately change containers.
 Successful compatibility means both sides recover identical name and payload bytes,
 not that independently generated encrypted PNGs have identical file hashes.
+
+## Managed multi-file payloads (Android 0.4.0 / Windows 1.6.0)
+
+The existing PAY1 payload may contain a standard ZIP named `MoyleSteg-files.zip`.
+Exact EOCD comment `MOYLESTEG-BUNDLE-V1` opts into bounded multi-file inspection;
+ordinary ZIP files remain single payloads. This does not change the authenticated
+outer format. Older readers recover the complete ZIP. The shared restricted ZIP
+profile and recovery semantics are specified in [MULTIFILE_0_4_0.md](MULTIFILE_0_4_0.md).

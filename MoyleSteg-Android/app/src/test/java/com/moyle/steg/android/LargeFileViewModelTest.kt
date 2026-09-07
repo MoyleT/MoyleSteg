@@ -75,7 +75,14 @@ class LargeFileViewModelTest {
         assertEquals(sha256(bytes),encrypted.contentHash)
         assertTrue(encrypted.staged!!.length()>4*1024*1024)
         val container=File(directory,"wrong-extension.png");encrypted.staged.copyTo(container)
-        vm.operation(Operation.RESTORE);select(container.name)
+        vm.operation(Operation.RESTORE)
+        assertNotNull("The private encrypted result has not been exported by the app",vm.state.value.discardRequest)
+        assertSame(encrypted,vm.state.value.result)
+        assertTrue(encrypted.staged.exists())
+        vm.confirmDiscard()
+        assertNull(vm.state.value.discardRequest)
+        assertFalse(encrypted.staged.exists())
+        select(container.name)
         assertEquals("saes",vm.state.value.inputProbe?.format)
         val restored=runResult()
         assertEquals("source.bin",restored.suggestedName)
@@ -87,6 +94,7 @@ class LargeFileViewModelTest {
         assertEquals("source.bin",saved.name)
         assertArrayEquals(bytes,saved.file.readBytes())
         vm.operation(Operation.VERIFY)
+        assertNull("An already saved download does not require discarding unsaved work",vm.state.value.discardRequest)
         val verified=runResult()
         assertNull(verified.staged)
         assertEquals(sha256(bytes),verified.contentHash)
@@ -100,12 +108,20 @@ class LargeFileViewModelTest {
         assertEquals(DocumentProbe(File(directory,"received.jpg").length(),"png",96,64),vm.state.value.inputProbe)
         assertNull(vm.state.value.result)
     }
-    @Test fun manualMemoryNeedsCurrentConfirmationAndClearsOldResult(){
-        vm.operation(Operation.KEYGEN);assertNotNull(runResult().staged)
+    @Test fun manualMemoryNeedsCurrentConfirmationAndKeepsVerifiedResult(){
+        vm.operation(Operation.KEYGEN)
+        val original=runResult()
+        val staged=original.staged!!
+        val contents=staged.readBytes()
         vm.manualMemory(true);vm.manualMemoryMiB("96")
-        assertNull(vm.state.value.result)
+        assertSame(original,vm.state.value.result)
+        assertArrayEquals(contents,staged.readBytes())
+        assertFalse(vm.state.value.resourceAcknowledged)
         vm.run();assertFalse(vm.state.value.busy);assertNotNull(vm.state.value.error)
+        assertSame("Rejected start must not remove the existing verified result",original,vm.state.value.result)
+        assertArrayEquals(contents,staged.readBytes())
         vm.acknowledgeResources(true);runResult()
+        assertFalse("An explicitly started new task releases the previous private result",staged.exists())
         assertFalse(vm.state.value.resourceAcknowledged)
     }
     @Test fun changingInputOrBudgetRevokesConfirmation(){

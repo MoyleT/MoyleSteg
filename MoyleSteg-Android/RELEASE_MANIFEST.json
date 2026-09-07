@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "project": "MoyleSteg-Android",
-  "version": "0.3.2-alpha",
+  "version": "0.4.1-alpha",
   "kind": "public-source",
-  "file_count": 224,
+  "file_count": 252,
   "scope": "Source, public documentation and synthetic test evidence. This manifest excludes itself and SHA256SUMS.txt; SHA256SUMS.txt also covers this manifest.",
   "files": [
     {
@@ -23,8 +23,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 18012,
-      "sha256": "3756e86f93e2542e47a659b70167e71a520103767d7699415c396eb8b4fa07e1"
+      "bytes": 21130,
+      "sha256": "216ca13273f95c6d45f39d75468aa7be5b088e15d872757745d5aa8335f7c39a"
     },
     {
       "path": "THIRD_PARTY.md",
@@ -34,7 +34,7 @@
     {
       "path": "app/build.gradle.kts",
       "bytes": 2483,
-      "sha256": "991d7c1c8408163a7aef1d8e01c8908fa66296f54757a225479e2cecd9b451f4"
+      "sha256": "ba05f8b590dbda15f744c0e3d705459316d4e4110a02a86e994931d609e6a9f8"
     },
     {
       "path": "app/src/androidTest/java/com/moyle/steg/android/DeviceInteropTest.kt",
@@ -53,8 +53,8 @@
     },
     {
       "path": "app/src/androidTest/java/com/moyle/steg/android/UiSmokeTest.kt",
-      "bytes": 1522,
-      "sha256": "acc61e7221883c3372c002803a7e0ffe96981b12e01b4d06d0ce949de97173cd"
+      "bytes": 6286,
+      "sha256": "d250bacac4aafe0cac4c527209ef4754149aa0360afbdb86ed005b49b7f69f49"
     },
     {
       "path": "app/src/main/AndroidManifest.xml",
@@ -63,8 +63,8 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/DocumentStore.kt",
-      "bytes": 15642,
-      "sha256": "11a69ddd08c635a78714c67ac48aef44e2b55991687e58e4939d42b9371ce2e2"
+      "bytes": 20214,
+      "sha256": "9172edf75531b61799af891a8b2920b609ef886e3e40eafafd2e15bc4f9e7314"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/DownloadFileProvider.kt",
@@ -93,8 +93,8 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleApp.kt",
-      "bytes": 23315,
-      "sha256": "4b1a5152cf7c807c1d658101ab9ae9d36315bfb3349c04c3478fd0684556b3fd"
+      "bytes": 29719,
+      "sha256": "53d64c4a6662dc76b5fa10c331b9da72b3d5cc8161adff84b0825396ad4f8de0"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleTheme.kt",
@@ -103,8 +103,8 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleViewModel.kt",
-      "bytes": 28398,
-      "sha256": "3b63cdd12a6c71970a136c907dbe07390e8260289b02ad39a1886f4abab12e5c"
+      "bytes": 43551,
+      "sha256": "bb7bdaedf6c2e3606a9627ac4ba6bd05746164965176000efc242bb62e8da7f2"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/ResourcesPanel.kt",
@@ -138,13 +138,23 @@
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/AutoExpandViewModelTest.kt",
-      "bytes": 11751,
-      "sha256": "b6b6bba44bb08a21dbc945711f46036b00fa829205088db71685f3789bd21029"
+      "bytes": 11807,
+      "sha256": "3665c2cece6c1d047ddd24b27159fec2c9d9fc56cba56f7537a06d9c12e38c42"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/DocumentStoreDiskBudgetTest.kt",
+      "bytes": 3955,
+      "sha256": "5d309d1119c03d325d5f729e582e0efbf432f3de5ab296fd84316487f9d0ba8c"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/DocumentStoreRegressionTest.kt",
       "bytes": 10157,
       "sha256": "24cff78156b0a4c51d094d6fb9ee95f4c355529a436be373bff2b0a6e0e4e916"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/DocumentStoreSelectionCancellationTest.kt",
+      "bytes": 11546,
+      "sha256": "5ee1b353026cdd2c5c9f23d56bbb710cb5c2138276410451a4cf143ced3aa9a5"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/DownloadsExporterTest.kt",
@@ -153,8 +163,8 @@
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/GifViewModelTest.kt",
-      "bytes": 7339,
-      "sha256": "7cc5a450fe442c051cacb9659bdc382a2bda0b199b28976ac0e6d598b8e39261"
+      "bytes": 7759,
+      "sha256": "211d8e606a55736d25b36c40d795701d84eef9c73c3203ae7c7d530091130c54"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/JpegCarrierTest.kt",
@@ -178,13 +188,23 @@
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/LargeFileViewModelTest.kt",
-      "bytes": 8162,
-      "sha256": "3d83035c217d278a9a17be135a4be41d755003581972e4f1ba25b459e04eed7f"
+      "bytes": 9105,
+      "sha256": "697d05cae823635135ee7765bb08b7d723f743c75877c34ebca310064e14fd83"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/MemoryPolicyTest.kt",
       "bytes": 3715,
       "sha256": "d35295d353d04426368932ed42bacf010aa7df1763b619a5f12a8c263f602a7d"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/MultiFileViewModelTest.kt",
+      "bytes": 18848,
+      "sha256": "335b622956e4c7ff4feed4a1e2adf0d941f8676a0e44379f23b2bbccf0ec350c"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/NavigationRetentionTest.kt",
+      "bytes": 5131,
+      "sha256": "3b1dbd4eb56c7aaeaaed83538bc1268cbc3e9495a1bdf81582bc950455136543"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/RestoreDownloadsViewModelTest.kt",
@@ -198,8 +218,8 @@
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/SelectionRegressionTest.kt",
-      "bytes": 7739,
-      "sha256": "4e15da8ca6d5a2c4489743758bd7fc5c9cfc160d3955747f8cdf04759e8a07de"
+      "bytes": 10446,
+      "sha256": "d56a3437edc92baca313807ca827ea1bd15f993d313f966eefe8d491fc5e02c9"
     },
     {
       "path": "build.gradle.kts",
@@ -218,8 +238,8 @@
     },
     {
       "path": "core/build.gradle.kts",
-      "bytes": 4818,
-      "sha256": "145f71f80d56a2f8b3b4d4b6aa611a678d4585008c78f6f0e33d8a765a200b3c"
+      "bytes": 6662,
+      "sha256": "73571900760119cbdea7f79b1dab8f5f36700955b83f177a2768d98becbdb4da"
     },
     {
       "path": "core/src/main/kotlin/com/moyle/steg/core/BoundedIo.kt",
@@ -255,6 +275,11 @@
       "path": "core/src/main/kotlin/com/moyle/steg/core/Model.kt",
       "bytes": 7357,
       "sha256": "d93b043ead15f791e7c42fc1f45881c419f6c67bd4e7e345a8a9db30c8a46889"
+    },
+    {
+      "path": "core/src/main/kotlin/com/moyle/steg/core/MultiFileBundle.kt",
+      "bytes": 26213,
+      "sha256": "ae3b5e6239ef64505ddd59ee7bb05c8710c7c47307be0b0652ee4f797946a3b4"
     },
     {
       "path": "core/src/main/kotlin/com/moyle/steg/core/Payload.kt",
@@ -297,6 +322,16 @@
       "sha256": "3641449b5be0c5f9772e4bc05a2f98f7023b215991a16b29645d5c624e8d49f4"
     },
     {
+      "path": "core/src/test/kotlin/com/moyle/steg/core/BundleDiskRegression.kt",
+      "bytes": 10889,
+      "sha256": "43be6d99c5e79092ff523c988ae2d98c7a38f12ecea9dee5c0b9e3bf42143bb3"
+    },
+    {
+      "path": "core/src/test/kotlin/com/moyle/steg/core/BundleEnvelopeRegression.kt",
+      "bytes": 5595,
+      "sha256": "c8d114e8f9bfdf1be5168117227b808278eed697c66eb1d1727eb07c8d5fa9d8"
+    },
+    {
       "path": "core/src/test/kotlin/com/moyle/steg/core/CaptureRegression.kt",
       "bytes": 9039,
       "sha256": "0735467deb2eb57b6702e40bb780f0c41c924547355f30a9f2fe5730bb82bf69"
@@ -322,6 +357,11 @@
       "sha256": "6ad4545356b1de84c402c6e250247c7485f43f68ce658dcfe97b60e67c8535a5"
     },
     {
+      "path": "core/src/test/kotlin/com/moyle/steg/core/MultiFileBundleRegression.kt",
+      "bytes": 15923,
+      "sha256": "ff4767adcf449c67d0b18cd84cdad4b754ed60f438638798d45ba75da373e5dd"
+    },
+    {
       "path": "core/src/test/kotlin/com/moyle/steg/core/PixelCarrierRegression.kt",
       "bytes": 2603,
       "sha256": "843985166e13ce8815f8524e6db70da052e02ab565ff1824e3e392487935777f"
@@ -335,6 +375,51 @@
       "path": "core/src/test/kotlin/com/moyle/steg/core/SaesFilesRegression.kt",
       "bytes": 23609,
       "sha256": "0463ee95f5daaa7c100691950dd02a22c097b62a6c1cb7ad78ca986860a6f906"
+    },
+    {
+      "path": "core/src/test/resources/bundle/envelopes/expected.json",
+      "bytes": 1546,
+      "sha256": "8f22bbe65f4d94d8a6793e32b23c5e69ef528afe1a3d0879e449c114da4f9bed"
+    },
+    {
+      "path": "core/src/test/resources/bundle/envelopes/python-key.gif",
+      "bytes": 4878,
+      "sha256": "fad0b4d292a2b954a4af1422ebd0246bb842c33d17dd61dbb376719ed99335c6"
+    },
+    {
+      "path": "core/src/test/resources/bundle/envelopes/python-key.png",
+      "bytes": 34910,
+      "sha256": "5452d6996fab828a72021e948551522f8fd466893c984e9ed153f3ddbf9349aa"
+    },
+    {
+      "path": "core/src/test/resources/bundle/envelopes/python-key.saes",
+      "bytes": 4677,
+      "sha256": "18207cd7d91f8b09a6ccadb0a76d113590199625ac8a3cd84cbcf26ac600829d"
+    },
+    {
+      "path": "core/src/test/resources/bundle/envelopes/python-password.gif",
+      "bytes": 4878,
+      "sha256": "40e2f9ad1634e667fd665f64b63c42c44650a049dc213d7a705f6a31213d91e1"
+    },
+    {
+      "path": "core/src/test/resources/bundle/envelopes/python-password.png",
+      "bytes": 35019,
+      "sha256": "2a9d70456e332e4f8679876636fbdcfb282de47f6023aaaf26704dbe90a1a361"
+    },
+    {
+      "path": "core/src/test/resources/bundle/envelopes/python-password.saes",
+      "bytes": 4677,
+      "sha256": "10d4cda95a66518c5a36646700c9d1293cb136e1769cf712ac76c6b403f989b6"
+    },
+    {
+      "path": "core/src/test/resources/bundle/python-bundle.zip",
+      "bytes": 4833,
+      "sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0"
+    },
+    {
+      "path": "core/src/test/resources/bundle/python-expected.json",
+      "bytes": 1009,
+      "sha256": "302e18794b94fe150ebd3b4fa1b6e73117d2178bdb6887c871a05d520d0495d3"
     },
     {
       "path": "core/src/test/resources/gif/README.md",
@@ -798,8 +883,8 @@
     },
     {
       "path": "docs/DEVICE_ACCEPTANCE.md",
-      "bytes": 8089,
-      "sha256": "f6c93e4fd0a51205544e1b35d334ebb77d4c4c31c42c32e4b10ec17162b335a2"
+      "bytes": 11571,
+      "sha256": "5e5208672fb5e8421e000eeaf73d9973e54e871414aaa0a17730d37da809627a"
     },
     {
       "path": "docs/DOWNLOAD_RESTORE_0_3_2.md",
@@ -827,14 +912,24 @@
       "sha256": "26ad6fe7f7621e363a92b43e4583827d637b17148200e3ff547d9b2a944672bb"
     },
     {
+      "path": "docs/MULTIFILE_0_4_0.md",
+      "bytes": 4498,
+      "sha256": "1424f2dc0d436c7589196338e720251e979134b606abcd0ffc6d26b567815f1a"
+    },
+    {
       "path": "docs/PROTOCOL.md",
-      "bytes": 2714,
-      "sha256": "8139d3769e710a86fcfdfbd29dc618542a52b16d550a52d3a8b457febbee928f"
+      "bytes": 3195,
+      "sha256": "c3d273b89463a9afe4003c4c9553a49f298bf4632d745bc18164cd55330aecc6"
     },
     {
       "path": "docs/RELIABILITY_0_1_1.md",
       "bytes": 2367,
       "sha256": "9c410617433dd48ee27b78d4e4473887653b0438f5d512042e20342af8f92923"
+    },
+    {
+      "path": "docs/RELIABILITY_0_4_1.md",
+      "bytes": 4120,
+      "sha256": "5d9e301dab2dc2b077148d9f80b7dd7f411042c95b12aa338837ec0b8847513a"
     },
     {
       "path": "docs/SOURCES.md",
@@ -888,8 +983,8 @@
     },
     {
       "path": "tools/package_source.py",
-      "bytes": 5215,
-      "sha256": "12c559402dcace0b54542695335bec1bf6461b9725957a63b8008ea1e3681344"
+      "bytes": 5589,
+      "sha256": "c0d588319726f3a3ef164c96c7e2c56f9b8a8c96218f220a2ec65db74f6fc076"
     },
     {
       "path": "tools/png_vectors.py",
@@ -913,13 +1008,18 @@
     },
     {
       "path": "tools/test_core_local.py",
-      "bytes": 3048,
-      "sha256": "88b661656dcbd8e29db75be8329e1760831230fed7a135430bbce4bb36f301fd"
+      "bytes": 3734,
+      "sha256": "0c75ae2b428f0b2605f91dc0a5f8e98d272e0d7c0e8b80684a23fe1af6e03b88"
     },
     {
       "path": "tools/verify_autoexpand_python.py",
       "bytes": 1657,
       "sha256": "057da31e552c7a217c59ca2dbf2e4b741a7483eee84869971f901d368e364512"
+    },
+    {
+      "path": "tools/verify_bundle_python.py",
+      "bytes": 4949,
+      "sha256": "82b36982e04fbfe3221060fbd4163152ec0b7745863c3b6783c783379a661b1c"
     },
     {
       "path": "tools/verify_gif_python.py",
@@ -977,6 +1077,36 @@
       "sha256": "67c64f86e275cda5360c7dfa54ce0f3cd24f0e08d5844eb889187022e940650b"
     },
     {
+      "path": "verification/0.4.0-alpha/cross-end-envelope-summary.json",
+      "bytes": 6393,
+      "sha256": "787745cab084ba0c0c1700cc7ca1b62f813ec75aa7954c95da26753c4785805a"
+    },
+    {
+      "path": "verification/0.4.0-alpha/reference-envelope-verification.json",
+      "bytes": 2823,
+      "sha256": "c8ec2d6c9c1b2058515602399127dc176964df196adee48514b28b90c5955fc8"
+    },
+    {
+      "path": "verification/0.4.0-alpha/validation.json",
+      "bytes": 3770,
+      "sha256": "c56489b1a1d0d8eba2bc0380e1a61221e8b94310a572bf92e4814898e0e7d21a"
+    },
+    {
+      "path": "verification/0.4.1-alpha/cross-end-envelope-summary.json",
+      "bytes": 6674,
+      "sha256": "f07aa3bdabf2caec8c949d17d0be6883bb1454810f1d9fc0cbd406726537664f"
+    },
+    {
+      "path": "verification/0.4.1-alpha/reference-envelope-verification.json",
+      "bytes": 2823,
+      "sha256": "e68094abe3ba8218fc6cbc316cca923998d0a542ddd1175fd92ccf222f01f669"
+    },
+    {
+      "path": "verification/0.4.1-alpha/validation.json",
+      "bytes": 6756,
+      "sha256": "91d91f1a10204fc28b158c6d94f63e346dc54efef236d8bac43e139d52d91e74"
+    },
+    {
       "path": "verification/TEST_REPORT.md",
       "bytes": 2093,
       "sha256": "aed06e8f8adadc37decffaf43b226256688aedbd01f52696a32df605b5388514"
@@ -1010,6 +1140,16 @@
       "path": "verification/TEST_REPORT_0_3_2.md",
       "bytes": 3989,
       "sha256": "c472750be9ca62a8ae1ba231cff4bf44e3adcc84cd5dc961139228a811dc4675"
+    },
+    {
+      "path": "verification/TEST_REPORT_0_4_0.md",
+      "bytes": 3057,
+      "sha256": "547d4c489738746b74f5a17debea3d6652684d14b6f3084a3537d2147a2bc746"
+    },
+    {
+      "path": "verification/TEST_REPORT_0_4_1.md",
+      "bytes": 3785,
+      "sha256": "bb312ca5ae5f66459ad235f87c89eabcecdcd862eb42443c62f9984849a95e67"
     },
     {
       "path": "verification/android-build-attempt.log",

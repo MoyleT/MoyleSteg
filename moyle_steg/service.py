@@ -17,6 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory, gettempdir
 
 from PIL import Image, UnidentifiedImageError
+from .bundles import BundleSession
 
 from png_steg_aes256 import (
     AuthenticationError,
@@ -129,6 +130,8 @@ class OperationRequest:
     force: bool = False
     output_directory: str = ""
     max_container_bytes: int = DEFAULT_MAX_CONTAINER_BYTES
+    input_paths: tuple[str, ...] = ()
+    detect_bundle: bool = False
 
     def __repr__(self) -> str:
         return (
@@ -152,6 +155,7 @@ class OperationResult:
     details: dict[str, str] = field(default_factory=dict)
     input_path: str = ""
     completed_at: str = ""
+    bundle: BundleSession | None = field(default=None, repr=False, compare=False)
 
 
 def execute(request: OperationRequest, *, control: OperationControl | None = None) -> OperationResult:
@@ -160,12 +164,18 @@ def execute(request: OperationRequest, *, control: OperationControl | None = Non
         raise TypeError("request 必须为 OperationRequest")
     # Progress callbacks and GUI edits must not change the task's provenance.
     request = replace(request)
+    request.input_paths = tuple(str(Path(value).absolute()) for value in request.input_paths)
+    if request.input_paths:
+        if request.operation not in {"hide", "encrypt", "preflight"}:
+            raise _ValidationError("invalid_input", "多文件仅支持隐藏或加密")
+        request.input_path = request.input_paths[0]
     for name in ("input_path", "cover_path"):
         if value := getattr(request, name):
             setattr(request, name, str(Path(value).absolute()))
-    context_input = (request.cover_path or request.input_path) if request.operation == "capacity" else request.input_path
+    context_input = ((request.cover_path or request.input_path) if request.operation == "capacity"
+                     else "\n".join(request.input_paths) if request.input_paths else request.input_path)
     try:
-        result = _execute(request, control=control)
+        result = _execute_multiple(request, control) if len(request.input_paths) > 1 else _execute(request, control=control)
     except StegError as exc:
         raw = str(exc)
         if not getattr(exc, "code", "") and any(marker in raw for marker in ("资源上限", "安全解码上限", "像素数超过")):
@@ -180,6 +190,33 @@ def execute(request: OperationRequest, *, control: OperationControl | None = Non
         raise
     return replace(result, input_path=context_input,
                    completed_at=datetime.now().astimezone().isoformat(timespec="seconds"))
+
+
+def _execute_multiple(request, control):
+    """Protect every selected source before writing the private managed ZIP."""
+    from moyle_bundle import BundleSource, create_bundle
+    control = control or OperationControl()
+    sources = tuple(_required_input(value, "input") for value in request.input_paths)
+    if request.operation in {"hide", "preflight"}:
+        _required_input(request.cover_path, "cover")
+    if request.operation != "preflight":
+        _validate_output(request)
+        _credential(request, for_write=True)
+
+    def progress(stage, completed, total):
+        control.report(stage, completed, total)
+        if stage == "commit" and request.output_path:
+            _validate_output(request)
+
+    guarded = OperationControl(progress=progress, cancelled=lambda: (control.check() or False))
+    with TemporaryDirectory(prefix="moyle-bundle-create-") as directory:
+        archive = Path(directory) / "MoyleSteg-files.zip"
+        info = create_bundle(tuple(BundleSource(path, path.name) for path in sources), archive,
+                             max_total_bytes=request.max_file_bytes,
+                             max_archive_bytes=request.max_file_bytes, control=control)
+        result = _execute(replace(request, input_path=str(archive)), control=guarded)
+        return replace(result, details={**result.details, "file_count": str(len(info.entries)),
+                       "source_total_bytes": str(info.total_bytes), "bundle_bytes": str(info.archive_bytes)})
 
 
 def _execute(request: OperationRequest, *, control: OperationControl | None = None) -> OperationResult:
@@ -265,6 +302,24 @@ def _execute(request: OperationRequest, *, control: OperationControl | None = No
 
     if operation in {"inspect", "verify"}:
         return _verify(request, input_path, credential, control)
+
+    if request.detect_bundle and operation in {"extract", "decrypt"}:
+        decoded = (decode_image(input_path, credential=credential, max_pixels=request.max_pixels,
+                     max_file_bytes=request.max_file_bytes, max_container_bytes=request.max_container_bytes, control=control)
+                   if operation == "extract" else decode_encrypted_file(input_path, credential=credential,
+                     max_file_bytes=request.max_file_bytes, max_container_bytes=request.max_container_bytes, control=control))
+        protected = tuple(Path(value) for value in (request.input_path, request.cover_path, request.key_path) if value)
+        session = BundleSession.from_authenticated(decoded.data, max_total_bytes=request.max_file_bytes,
+                       max_archive_bytes=request.max_file_bytes, protected_paths=protected, control=control)
+        if session is not None:
+            return OperationResult(operation=operation, title="bundle_ready", bundle=session,
+                    details={**_decoded_details(decoded), "file_count": str(len(session.info.entries)),
+                             "source_total_bytes": str(session.info.total_bytes)})
+        destination = (_original_destination(request, output_directory, decoded.filename)
+                       if output_directory is not None else output_path)
+        _atomic_write(destination, decoded.data, force=request.force, protected_paths=protected, control=control)
+        return OperationResult(operation=operation, title=f"{operation}_success", output_path=str(destination),
+                               details=_decoded_details(decoded))
 
     if output_directory is not None:
         decoded = (
@@ -581,6 +636,8 @@ def friendly_error(exc: Exception, language: str = "zh_CN") -> str:
 
 
 _VALIDATION_MESSAGES: dict[str, tuple[str, str]] = {
+    "invalid_bundle": ("多文件包无效或包含不支持的名称、结构。请保留原容器并核对生成端版本。", "The bundle is invalid or contains unsupported names or structures. Preserve the original container and check the producing version."),
+    "bundle_resource_limit": ("多文件包超过当前文件数量、展开大小或压缩包预算。创建时最多选择 100 个文件；恢复时请保留原容器并检查恢复预算。", "The bundle exceeds the file count, expanded-size or archive budget. Creation supports up to 100 files. For recovery, preserve the original container and review the recovery budget."),
     "recovery_resource_limit": (
         "文件超过当前恢复预算。请勿缩放、裁剪或重新保存原隐写 PNG／GIF；确认设备资源充足后，可提高恢复预算。",
         "The file exceeds the current recovery budget. Do not resize, crop, or re-save the original steganographic PNG/GIF. Increase the recovery budget only after confirming sufficient device resources.",
@@ -660,14 +717,14 @@ def _validate_output(request: OperationRequest) -> Path:
     if not output.is_absolute():
         raise _ValidationError("output_absolute", "输出路径必须为绝对路径")
 
-    protected = [request.input_path, request.cover_path, request.key_path]
+    protected = [request.input_path, request.cover_path, request.key_path, *request.input_paths]
     if any(value and _same_path(output, Path(value)) for value in protected):
         raise _ValidationError(
             "output_collision", "输出路径不能与输入、载体或密钥文件相同"
         )
     if output.exists() and not request.force:
         raise FileExistsError("输出文件已存在")
-    validate_operation_paths(inputs=tuple(Path(value) for value in (request.input_path, request.cover_path) if value),
+    validate_operation_paths(inputs=tuple(Path(value) for value in (request.input_path, request.cover_path, *request.input_paths) if value),
                              output=output, key_path=Path(request.key_path) if request.key_path else None,
                              force=request.force)
     return output

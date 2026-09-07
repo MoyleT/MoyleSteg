@@ -105,3 +105,42 @@ val pixelCarrierRegression by tasks.registering(JavaExec::class) {
     maxHeapSize = "128m"
 }
 tasks.check { dependsOn(pixelCarrierRegression) }
+
+val multiFileBundleRegression by tasks.registering(JavaExec::class) {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.moyle.steg.core.MultiFileBundleRegression")
+    args(layout.buildDirectory.dir("bundle-output").get().asFile.absolutePath,
+         layout.projectDirectory.file("src/test/resources/bundle/python-bundle.zip").asFile.absolutePath)
+    maxHeapSize = "128m"
+}
+tasks.check { dependsOn(multiFileBundleRegression) }
+
+val multiFileBundleLowHeapRegression by tasks.registering(JavaExec::class) {
+    dependsOn(multiFileBundleRegression)
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.moyle.steg.core.MultiFileBundleRegression")
+    args(layout.buildDirectory.dir("bundle-output").get().asFile.absolutePath, "lowheap")
+    maxHeapSize = "32m"
+}
+tasks.check { dependsOn(multiFileBundleLowHeapRegression) }
+
+val bundleEnvelopeRegression by tasks.registering(JavaExec::class) {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.moyle.steg.core.BundleEnvelopeRegression")
+    args(layout.projectDirectory.dir("src/test/resources/bundle").asFile.absolutePath,
+         layout.projectDirectory.file("src/test/resources/gif/cover.gif").asFile.absolutePath,
+         layout.buildDirectory.dir("bundle-envelope-output").get().asFile.absolutePath)
+    maxHeapSize = "256m"
+}
+tasks.check { dependsOn(bundleEnvelopeRegression) }
+
+val bundleDiskRegression by tasks.registering(JavaExec::class) {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.moyle.steg.core.BundleDiskRegression")
+    args(layout.buildDirectory.dir("bundle-disk-output").get().asFile.absolutePath)
+    maxHeapSize = "128m"
+}
+tasks.check { dependsOn(bundleDiskRegression) }

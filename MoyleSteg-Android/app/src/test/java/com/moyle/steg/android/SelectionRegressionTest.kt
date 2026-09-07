@@ -7,6 +7,7 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.os.CancellationSignal
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
@@ -157,21 +158,74 @@ class SelectionRegressionTest {
         assertNull(vm.state.value.key)
     }
 
+    @Test fun cancellingMultiSelectionCancelsProviderAndDoesNotQueryRemainingFiles() {
+        val hold=provider.hold("slow.txt")
+        vm.pickInputs(listOf(uri("slow.txt"),uri("unneeded.txt")))
+        awaitCondition { hold.entered.count==0L }
+        vm.cancelSelection()
+        awaitCondition { hold.cancelled.count==0L }
+        settle()
+        assertFalse(provider.queried.contains("unneeded.txt"))
+        assertTrue(vm.state.value.inputs.isEmpty())
+        assertNull(vm.state.value.error)
+    }
+
+    @Test fun replacingSelectionCancelsOldProviderRequestOnlyInThatSlot() {
+        val old=provider.hold("slow.txt")
+        val cover=provider.hold("cover.png")
+        vm.pick(DocSlot.COVER,uri("cover.png"))
+        vm.pick(DocSlot.INPUT,uri("slow.txt"))
+        awaitCondition { old.entered.count==0L && cover.entered.count==0L }
+        vm.pick(DocSlot.INPUT,uri("new.txt"))
+        awaitCondition { old.cancelled.count==0L && vm.state.value.input?.uri==uri("new.txt") }
+        assertEquals(1L,cover.cancelled.count)
+        cover.release.countDown();settle()
+        assertEquals(uri("cover.png"),vm.state.value.cover?.uri)
+    }
+    @Test fun slowProviderCancellationDoesNotBlockUiAction() {
+        val hold=provider.hold("slow-cancel.txt")
+        val allowCancellation=CountDownLatch(1)
+        hold.blockCancel=allowCancellation
+        vm.pick(DocSlot.INPUT,uri("slow-cancel.txt"))
+        awaitCondition {hold.entered.count==0L}
+        try{
+            vm.cancelSelection()
+            assertEquals("UI cancellation waited for the external provider",1L,hold.release.count)
+            assertFalse(vm.state.value.selecting)
+            awaitCondition{hold.cancelled.count==0L}
+        }finally{allowCancellation.countDown()}
+        settle()
+        assertNull(vm.state.value.input)
+    }
+
     class Hold(val fail: Boolean) {
         val entered = CountDownLatch(1)
         val release = CountDownLatch(1)
+        val cancelled = CountDownLatch(1)
+        var blockCancel:CountDownLatch?=null
     }
     class DelayedDocuments : ContentProvider() {
         val holds = ConcurrentHashMap<String, Hold>()
+        val queried = ConcurrentHashMap.newKeySet<String>()
         fun hold(name: String, fail: Boolean = false) = Hold(fail).also { holds[name] = it }
         override fun onCreate() = true
         override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor {
+            queried.add(uri.lastPathSegment!!)
             holds[uri.lastPathSegment]?.let {
                 it.entered.countDown()
                 check(it.release.await(10, TimeUnit.SECONDS)) { "test provider timed out" }
                 if (it.fail) throw IllegalStateException("synthetic provider failure")
             }
             return MatrixCursor(arrayOf(OpenableColumns.DISPLAY_NAME)).apply { addRow(arrayOf(uri.lastPathSegment)) }
+        }
+        override fun query(uri:Uri,projection:Array<out String>?,selection:String?,selectionArgs:Array<out String>?,sortOrder:String?,cancellationSignal:CancellationSignal?):Cursor {
+            cancellationSignal?.setOnCancelListener {
+                holds[uri.lastPathSegment]?.let { it.cancelled.countDown();it.blockCancel?.await(3,TimeUnit.SECONDS);it.release.countDown() }
+            }
+            cancellationSignal?.throwIfCanceled()
+            val cursor=query(uri,projection,selection,selectionArgs,sortOrder)
+            if(cancellationSignal?.isCanceled==true){cursor.close();cancellationSignal.throwIfCanceled()}
+            return cursor
         }
         override fun getType(uri: Uri) = "application/octet-stream"
         override fun insert(uri: Uri, values: ContentValues?): Uri? = null

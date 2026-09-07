@@ -10,8 +10,8 @@ android {
         applicationId = "com.moyle.steg.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.3.2-alpha"
+        versionCode = 9
+        versionName = "0.4.1-alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets.getByName("androidTest").assets.srcDir("../core/src/test/resources")

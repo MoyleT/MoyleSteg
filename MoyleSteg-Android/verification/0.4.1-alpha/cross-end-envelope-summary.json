@@ -1,0 +1,166 @@
+{
+  "synthetic_only": true,
+  "android_version": "0.4.1-alpha",
+  "desktop_version": "1.6.0",
+  "checked_at_utc": "2026-09-07T07:31:28.395587+00:00",
+  "cross_direction_cases_passed": 12,
+  "cross_direction_member_extractions_checked": 60,
+  "legacy_desktop_1_5_1_fallback_cases_passed": 6,
+  "legacy_member_checks": 30,
+  "bundled_desktop_1_5_0_fallback_cases_passed": 6,
+  "bundled_reference_member_checks": 30,
+  "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+  "python_to_kotlin": [
+    {
+      "container": "python-key.png",
+      "container_sha256": "5452d6996fab828a72021e948551522f8fd466893c984e9ed153f3ddbf9349aa",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-key.gif",
+      "container_sha256": "fad0b4d292a2b954a4af1422ebd0246bb842c33d17dd61dbb376719ed99335c6",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-key.saes",
+      "container_sha256": "18207cd7d91f8b09a6ccadb0a76d113590199625ac8a3cd84cbcf26ac600829d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-password.png",
+      "container_sha256": "2a9d70456e332e4f8679876636fbdcfb282de47f6023aaaf26704dbe90a1a361",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-password.gif",
+      "container_sha256": "40e2f9ad1634e667fd665f64b63c42c44650a049dc213d7a705f6a31213d91e1",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-password.saes",
+      "container_sha256": "10d4cda95a66518c5a36646700c9d1293cb136e1769cf712ac76c6b403f989b6",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    }
+  ],
+  "kotlin_to_python": [
+    {
+      "container": "kotlin-key.png",
+      "format": "png",
+      "credential": "key",
+      "container_sha256": "a39f3b2360a383b7a71d5776b23dedf601905ef5b13214cc1a2929d36bb447e3",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.gif",
+      "format": "gif",
+      "credential": "key",
+      "container_sha256": "d1018c7ae7c654d8e3c3734f020a41ecebbf9aecc677c6503116613c4aa8009b",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.saes",
+      "format": "saes",
+      "credential": "key",
+      "container_sha256": "d0bc728b58c7f454bb639dcd817c2a984e5d314373449e503054b3a8cf257dfe",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.png",
+      "format": "png",
+      "credential": "password",
+      "container_sha256": "0029b17fc0a9cf4581a04bfb75f5dab8a11e841699b416920fb25ba25bf456fb",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.gif",
+      "format": "gif",
+      "credential": "password",
+      "container_sha256": "b3a92c8234ef7017dd46843b875a9a802e49f00909b505d41ddc77398478f739",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.saes",
+      "format": "saes",
+      "credential": "password",
+      "container_sha256": "c4f03cd2a19c847f65f29c88f052c5401f33d089106e98b0cc91a26a876d8891",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    }
+  ],
+  "legacy_python_fallback": [
+    {
+      "container": "kotlin-key.png",
+      "format": "png",
+      "credential": "key",
+      "container_sha256": "a39f3b2360a383b7a71d5776b23dedf601905ef5b13214cc1a2929d36bb447e3",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.gif",
+      "format": "gif",
+      "credential": "key",
+      "container_sha256": "d1018c7ae7c654d8e3c3734f020a41ecebbf9aecc677c6503116613c4aa8009b",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.saes",
+      "format": "saes",
+      "credential": "key",
+      "container_sha256": "d0bc728b58c7f454bb639dcd817c2a984e5d314373449e503054b3a8cf257dfe",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.png",
+      "format": "png",
+      "credential": "password",
+      "container_sha256": "0029b17fc0a9cf4581a04bfb75f5dab8a11e841699b416920fb25ba25bf456fb",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.gif",
+      "format": "gif",
+      "credential": "password",
+      "container_sha256": "b3a92c8234ef7017dd46843b875a9a802e49f00909b505d41ddc77398478f739",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.saes",
+      "format": "saes",
+      "credential": "password",
+      "container_sha256": "c4f03cd2a19c847f65f29c88f052c5401f33d089106e98b0cc91a26a876d8891",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    }
+  ],
+  "current_python_module_sha256": "9ecada37ec7a90e24429a83b399b67da6b112d35efdf90b6e947b4a002d3edd3",
+  "legacy_reference_module_sha256": "9ecada37ec7a90e24429a83b399b67da6b112d35efdf90b6e947b4a002d3edd3",
+  "all_container_hashes_match_final_build": true
+}

@@ -1,6 +1,6 @@
-# Windows 1.5.1 reliability release
+# Windows 1.6.0 multi-file release
 
-Current retry and responsiveness changes are documented in [RELIABILITY_1.5.1.md](RELIABILITY_1.5.1.md). GIF format, compatibility and earlier validation are documented in [GIF_1.5.0.md](GIF_1.5.0.md). The archive includes the GIF parser and this public protocol note. Earlier versioned reports remain historical.
+Current multi-file creation, selective recovery, retained-session retry and protocol limits are documented in [MULTIFILE_1.6.0.md](MULTIFILE_1.6.0.md). Earlier retry and responsiveness changes are documented in [RELIABILITY_1.5.1.md](RELIABILITY_1.5.1.md). GIF format and earlier validation are documented in [GIF_1.5.0.md](GIF_1.5.0.md). The archive includes both carrier and bundle parsers. Earlier versioned reports remain historical.
 
 ## Public release contents
 
@@ -10,7 +10,7 @@ This document describes current packaging policy. Earlier versioned documents re
 
 The inherited 1.4.1 behavior binds restoration budgets to the actual opened container and fixes long-token overflow in narrow result cards. Existing themes, progress effects, captured-data verification association and v1 container/key formats remain compatible.
 
-Current measured validation results are recorded in [RELIABILITY_1.5.1.md](RELIABILITY_1.5.1.md). Source tests, native interaction, offscreen scaling and frozen-EXE checks are separate runs, using synthetic data. Their counts are not added together or presented as third-party audit results. Qt accessibility-name checks are not complete screen-reader certification. Raw local diagnostic JSON and screenshots remain outside the archive; the five explicitly approved public illustrations below are separate synthetic demonstration scenes, not verification evidence.
+Current implementation and release verification scope are recorded in [MULTIFILE_1.6.0.md](MULTIFILE_1.6.0.md). Source tests, native interaction, offscreen scaling and frozen-EXE checks are separate runs, using synthetic data. Their counts are not added together or presented as third-party audit results. Qt accessibility-name checks are not complete screen-reader certification. Raw local diagnostic JSON and screenshots remain outside the archive; the five explicitly approved public illustrations below are separate synthetic demonstration scenes, not verification evidence.
 
 ## Prepare and package locally
 
@@ -20,14 +20,14 @@ Current measured validation results are recorded in [RELIABILITY_1.5.1.md](RELIA
 4. After validation, package locally:
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\package_project.py --output dist\MoyleSteg-1.5.1-Full-Project.zip
+.\.venv\Scripts\python.exe scripts\package_project.py --output dist\MoyleSteg-1.6.0-Full-Project.zip
 ```
 
 The command makes no network requests. It refuses to replace an existing archive unless `--force` is explicitly supplied. The source and portable version markers must agree; that stale-build check is not a substitute for running the EXE.
 
 ## Explicit public allowlist
 
-Approved root files include `.gitignore`, `gif_carrier.py` and `requirements-test.txt`. Non-recursive rules select `moyle_steg/*.py`, test modules, explicitly named scripts/assets/licenses and nine public documents: `RELEASE.md`, `SECURITY_FIXES_1.2.md`, `RELIABILITY_1.2.1.md`, `VERIFICATION_1.2.2.md`, `APPEARANCE_1.3.0.md`, `RECOVERY_1.4.0.md`, `RELIABILITY_1.4.1.md`, `GIF_1.5.0.md`, `RELIABILITY_1.5.1.md`. Clean builds copy these documents into the runtime; the GIF protocol document is required in both locations.
+Approved root files include `.gitignore`, `gif_carrier.py`, `moyle_bundle.py` and `requirements-test.txt`. Non-recursive rules select `moyle_steg/*.py`, test modules, explicitly named scripts/assets/licenses and ten public documents: `RELEASE.md`, `SECURITY_FIXES_1.2.md`, `RELIABILITY_1.2.1.md`, `VERIFICATION_1.2.2.md`, `APPEARANCE_1.3.0.md`, `RECOVERY_1.4.0.md`, `RELIABILITY_1.4.1.md`, `GIF_1.5.0.md`, `RELIABILITY_1.5.1.md`, `MULTIFILE_1.6.0.md`. Clean builds copy these documents into the runtime; the GIF and multi-file protocol documents are required in both locations.
 
 Only five named images under `docs/screenshots/` are published: `theme-midnight.png`, `theme-blossom.png`, `theme-terminal.png`, `completion-summary.png`, `compact-large.png`. These native Qt illustrations contain fixed synthetic data, empty credentials and a visible demo notice, with no PNG text metadata. They are included only as source documentation. The portable runtime does not duplicate them; screenshot links in its copied documents refer to the full source package's gallery.
 
@@ -35,14 +35,14 @@ Nine theme arrow/checkmark SVGs and the two generated face-free fruit PNGs are e
 
 The clean build records exact portable members, sizes and SHA-256 digests in `dist/MoyleSteg/RUNTIME_MANIFEST.json`. Packaging requires that inventory, validates hashes again while copying bytes, and refuses extra, missing or changed files. Diagnostic outputs at the runtime root, inside a new directory or under `_internal` cannot silently enter a release. Keep `_internal/base_library.zip`: it is a required Python component.
 
-The allowlist excludes `artifacts`, private data directories, `.git`, `.venv`, build/cache directories, local investigation reports, previous release ZIPs and unapproved files. Real `.stegkey` and `.saes` files are excluded. Only three named legacy-format synthetic fixtures are allowed: `legacy-v1.png`, `legacy-v1.saes` and `legacy-posix-name.saes` in `tests/fixtures/`.
+The allowlist excludes `artifacts`, private data directories, `.git`, `.venv`, build/cache directories, local investigation reports, previous release ZIPs and unapproved files. Real `.stegkey` and `.saes` files are excluded. Named synthetic fixtures are limited to `legacy-v1.png`, `legacy-v1.saes`, `legacy-posix-name.saes` in `tests/fixtures/`, plus `kotlin-bundle.zip` and `kotlin-expected.json` in `tests/fixtures/bundle/` for cross-language bundle validation.
 
 ## Verify the current archive
 
-The archive contains one `MoyleSteg-1.5.1` root and a `RELEASE_MANIFEST.json` with relative paths, sizes and SHA-256 digests for every payload member. The manifest excludes its own digest and records no build hostname, username, absolute project path or wall-clock timestamp. Verify exact membership and bytes without extracting:
+The archive contains one `MoyleSteg-1.6.0` root and a `RELEASE_MANIFEST.json` with relative paths, sizes and SHA-256 digests for every payload member. The manifest excludes its own digest and records no build hostname, username, absolute project path or wall-clock timestamp. Verify exact membership and bytes without extracting:
 
 ```powershell
-.\.venv\Scripts\python.exe -c "from pathlib import Path; from scripts.package_project import verify_public_archive; verify_public_archive(Path('dist/MoyleSteg-1.5.1-Full-Project.zip')); print('Manifest verified')"
+.\.venv\Scripts\python.exe -c "from pathlib import Path; from scripts.package_project import verify_public_archive; verify_public_archive(Path('dist/MoyleSteg-1.6.0-Full-Project.zip')); print('Manifest verified')"
 ```
 
 Members use sorted names and fixed timestamps/attributes. The same approved input bytes produce identical ZIP bytes with the same Python/zlib environment. This does not promise byte-identical EXEs from separate compiler/PyInstaller runs. The manifest is an integrity record, not a digital signature or publisher identity proof. Execute the extracted portable app from its own directory as a separate release smoke check.

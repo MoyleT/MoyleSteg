@@ -2,9 +2,9 @@
 from pathlib import Path
 import math
 
-from PySide6.QtCore import Qt, Signal, QSize, QRectF, QPointF, QVariantAnimation, QEasingCurve, QEvent
+from PySide6.QtCore import Qt, Signal, QSize, QRectF, QPointF, QPoint, QVariantAnimation, QEasingCurve, QEvent, QTimer
 from PySide6.QtGui import QColor, QPainter, QPen, QImageReader, QImageIOHandler, QPixmap, QIcon, QPainterPath, QTextOption
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFrame, QStackedLayout, QTextBrowser, QSizePolicy
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFrame, QStackedLayout, QTextBrowser, QSizePolicy, QListWidget, QAbstractItemView, QScrollArea, QCheckBox
 
 
 class WrapTextLabel(QTextBrowser):
@@ -51,6 +51,72 @@ class WrapTextLabel(QTextBrowser):
 
     def minimumSizeHint(self):
         return QSize(0, self.fontMetrics().height() + 2)
+
+
+class ElidedPathLabel(QLabel):
+    """A compact, non-editable path; its complete value stays accessible."""
+
+    def __init__(self, caption, path, parent=None):
+        super().__init__(parent)
+        self._complete = caption + '  ·  ' + path
+        self.setTextFormat(Qt.TextFormat.PlainText)
+        self.setToolTip(path)
+        self.setAccessibleName(self._complete)
+        self.setProperty('role', 'muted')
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self._refresh()
+
+    def _refresh(self):
+        self.setMinimumHeight(self.fontMetrics().height() + 2)
+        super().setText(self.fontMetrics().elidedText(
+            self._complete, Qt.TextElideMode.ElideMiddle, max(0, self.contentsRect().width())))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.FontChange and hasattr(self, '_complete'):
+            self._refresh()
+
+    def sizeHint(self):
+        return QSize(320, self.fontMetrics().height() + 2)
+
+    def minimumSizeHint(self):
+        return QSize(0, self.fontMetrics().height() + 2)
+
+
+class BundleMemberCheckBox(QCheckBox):
+    """Elide only the visual caption, preserving the full member identity."""
+
+    def __init__(self, caption, name, parent=None):
+        super().__init__(parent)
+        self._complete = caption
+        self.setToolTip(name)
+        self.setAccessibleName(caption)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self._refresh()
+
+    def _refresh(self):
+        caption = self.fontMetrics().elidedText(self._complete, Qt.TextElideMode.ElideMiddle,
+                                                max(0, self.contentsRect().width() - 32))
+        super().setText(caption.replace('&', '&&'))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._refresh()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.FontChange and hasattr(self, '_complete'):
+            self._refresh()
+
+    def sizeHint(self):
+        return QSize(320, super().sizeHint().height())
+
+    def minimumSizeHint(self):
+        return QSize(0, super().sizeHint().height())
 
 
 class _PageLayout(QStackedLayout):
@@ -410,6 +476,132 @@ class FileField(QWidget):
                 and not self.save and self.isEnabled() and len(urls) == 1
                 and urls[0].isLocalFile() and Path(urls[0].toLocalFile()).is_file()):
             self.edit.setText(urls[0].toLocalFile())
+            event.setDropAction(Qt.DropAction.CopyAction)
+            event.accept()
+
+
+class MultiFileField(FileField):
+    """Keep the familiar single path and add a compact, keyboard usable list."""
+    def __init__(self, object_name, parent=None):
+        super().__init__(object_name, parent=parent)
+        self.multiple = True
+        self._paths = ()
+        self._language = 'zh_CN'
+        self.list = QListWidget()
+        self.list.setObjectName(object_name + '_files')
+        self.list.installEventFilter(self)
+        self.list.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.list.setMinimumWidth(0)
+        self.list.setMaximumHeight(112)
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.layout().addWidget(self.list)
+        self.summary = QLabel()
+        self.summary.setWordWrap(True)
+        self.summary.setProperty('role', 'muted')
+        self.layout().addWidget(self.summary)
+        self.actions = QWidget()
+        row = QHBoxLayout(self.actions)
+        row.setContentsMargins(0, 0, 0, 0)
+        self.remove = QPushButton()
+        self.clear_files = QPushButton()
+        row.addWidget(self.remove)
+        row.addWidget(self.clear_files)
+        row.addStretch()
+        self.layout().addWidget(self.actions)
+        self.remove.clicked.connect(self.remove_selected)
+        self.clear_files.clicked.connect(lambda: self.set_paths(()))
+        self.edit.textChanged.connect(self._edited)
+        self._render_files()
+
+    def paths(self):
+        value = self.edit.text().strip()
+        if not value:
+            return ()
+        return self._paths if self._paths and self._paths[0] == value else (value,)
+
+    def eventFilter(self, watched, event):
+        if watched is self.list and event.type() == QEvent.Type.FocusIn:
+            # QListWidget manages its own viewport. Reveal the whole control in
+            # the outer form after Qt has routed keyboard focus to its item.
+            QTimer.singleShot(0, self._reveal_list)
+        return super().eventFilter(watched, event)
+
+    def _reveal_list(self):
+        parent = self.parentWidget()
+        while parent is not None:
+            if isinstance(parent, QScrollArea):
+                top = self.list.mapTo(parent.widget(), QPoint(0, 0))
+                parent.ensureVisible(top.x(), top.y() + self.list.height() // 2,
+                                     0, self.list.height() // 2 + 8)
+                break
+            parent = parent.parentWidget()
+
+    def set_paths(self, paths):
+        values = tuple(dict.fromkeys(str(Path(path)) for path in paths if path))
+        self._paths = values if self.multiple else values[:1]
+        self.edit.blockSignals(True)
+        self.edit.setText(self._paths[0] if self._paths else '')
+        self.edit.blockSignals(False)
+        self._render_files()
+        self.path_changed.emit(self.edit.text())
+
+    def _edited(self, value):
+        if not self._paths or value != self._paths[0]:
+            self._paths = (value,) if value else ()
+            self._render_files()
+
+    def set_multiple(self, enabled):
+        self.multiple = bool(enabled)
+        if not enabled and len(self._paths) > 1:
+            self.set_paths(self._paths[:1])
+        self._render_files()
+
+    def remove_selected(self):
+        rows = {self.list.row(item) for item in self.list.selectedItems()}
+        self.set_paths(path for index, path in enumerate(self.paths()) if index not in rows)
+
+    def set_language(self, language):
+        self._language = language
+        self._render_files()
+
+    def _render_files(self):
+        from .i18n import tr
+        self.list.clear()
+        total = 0
+        for path in self._paths:
+            try:
+                size = Path(path).stat().st_size
+                total += size
+            except OSError:
+                size = 0
+            self.list.addItem(f'{Path(path).name}  ·  {size:,} B')
+            self.list.item(self.list.count() - 1).setToolTip(path)
+        self.summary.setText(tr('selection_summary', self._language, count=len(self._paths), size=f'{total:,} B'))
+        self.list.setAccessibleName(tr('selected_files', self._language))
+        self.remove.setText(tr('remove_selected', self._language))
+        self.clear_files.setText(tr('clear_files', self._language))
+        for widget in (self.list, self.summary, self.actions):
+            widget.setVisible(self.multiple and bool(self._paths))
+
+    def dragEnterEvent(self, event):
+        if not self.multiple:
+            return super().dragEnterEvent(event)
+        urls = event.mimeData().urls()
+        accepted = (self.isEnabled() and bool(event.possibleActions() & Qt.DropAction.CopyAction)
+                    and bool(urls) and all(url.isLocalFile() and Path(url.toLocalFile()).is_file() for url in urls))
+        self._set_drag_active(accepted)
+        if accepted:
+            event.setDropAction(Qt.DropAction.CopyAction)
+            event.accept()
+
+    def dropEvent(self, event):
+        if not self.multiple:
+            return super().dropEvent(event)
+        self._set_drag_active(False)
+        urls = event.mimeData().urls()
+        if (self.isEnabled() and bool(event.possibleActions() & Qt.DropAction.CopyAction) and urls
+                and all(url.isLocalFile() and Path(url.toLocalFile()).is_file() for url in urls)):
+            self.set_paths((*self.paths(), *(url.toLocalFile() for url in urls)))
             event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
 

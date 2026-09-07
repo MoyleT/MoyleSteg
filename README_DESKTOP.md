@@ -1,10 +1,12 @@
 # Moyle 隐写工坊 / Steganography Studio
 
-Windows 桌面版 1.5.1，改善计算中的界面响应与失败重试体验，支持可播放 GIF 动画载体，并提供深邃蓝紫、草莓樱桃粉色与黑客绿色三种主题、受控恢复预算、带输入上下文的完成摘要、大字号与小屏适配。保留 v1 PNG / `.saes` / `.stegkey` 格式兼容性；只读验证的认证与两项 SHA-256 仍基于同一份捕获数据。
+Windows 桌面版 1.6.0 支持一张图片隐写多个文件：多选、实际容量预检、认证后查看清单、保存全部或部分文件，保存失败可直接重试。支持可播放 GIF 动画载体，并保留深邃蓝紫、草莓樱桃粉色与黑客绿色三种主题、受控恢复预算、完成摘要、大字号与小屏适配。保留 v1 PNG / `.saes` / `.stegkey` 格式兼容性；只读验证的认证与两项 SHA-256 仍基于同一份捕获数据。
+
+Version 1.6.0 adds native multi-file selection, actual ZIP capacity preflight and authenticated member lists. Save selected or all pending files with non-overwriting names and retry without decrypting again. Single-file containers retain their existing behavior. [Multi-file details and limits / 多文件说明与限制](docs/MULTIFILE_1.6.0.md).
 
 GIF 可直接作为载体，输出保留动画，支持 Android 0.2.0-alpha 双向恢复。GIF 密文放在标准应用扩展块，不使用像素 LSB；动画不重编码，GIF 不做像素扩容。请按文件传输，避免聊天软件重新处理时删除扩展。完整协议、资源限制与实际验证范围见 [GIF 版本说明](docs/GIF_1.5.0.md)。
 
-Version 1.5.1 improves progress responsiveness and retains passwords during retries. Animated GIF carriers remain interoperable with Android 0.2.0-alpha. An application extension contains the existing encrypted SAES payload; original animation blocks are preserved without re-encoding. GIF does not use pixel LSBs or pixel resizing. File analysis can identify the extension, and re-encoding may remove it. Existing PNG/SAES formats, themes and safety checks remain.
+The inherited retry flow retains passwords when an operation fails. Animated GIF carriers remain interoperable with Android 0.2.0-alpha and later. An application extension contains the existing encrypted SAES payload; original animation blocks are preserved without re-encoding. GIF does not use pixel LSBs or pixel resizing. File analysis can identify the extension, and re-encoding may remove it. Existing PNG/SAES formats, themes and safety checks remain.
 
 ## 直接运行 / Run the portable app
 
@@ -42,7 +44,7 @@ Loading visuals follow the selected theme: juice and a few bubbles for Blossom, 
 
 Dropping a local file into an input references its existing path without moving the source. The field highlights when a valid file is dragged over it.
 
-1.3 系列主题参考了 GitHub 上 [Impeccable](https://github.com/pbakaus/impeccable) 的层次、留白、色彩和动态设计方法，以及 [Anthropic frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 的设计指导。应用仍为原生 Qt 桌面程序；这些参考未成为运行依赖。历史外观与素材来源见 [docs/APPEARANCE_1.3.0.md](docs/APPEARANCE_1.3.0.md)，本版变化见 [1.5.1 修复说明](docs/RELIABILITY_1.5.1.md)，合成截图见下方图库。
+1.3 系列主题参考了 GitHub 上 [Impeccable](https://github.com/pbakaus/impeccable) 的层次、留白、色彩和动态设计方法，以及 [Anthropic frontend-design](https://github.com/anthropics/skills/tree/main/skills/frontend-design) 的设计指导。应用仍为原生 Qt 桌面程序；这些参考未成为运行依赖。历史外观与素材来源见 [docs/APPEARANCE_1.3.0.md](docs/APPEARANCE_1.3.0.md)，本版变化见 [1.6.0 多文件说明](docs/MULTIFILE_1.6.0.md)，合成截图见下方图库。
 
 ## 功能 / Workflows
 
@@ -112,9 +114,9 @@ Use `requirements-gui.txt` for the app, Qt-free `requirements-dev.txt` for core 
 
 ## 测试与打包 / Test and build
 
-1.5.1 的实际运行结果与边界见 [docs/RELIABILITY_1.5.1.md](docs/RELIABILITY_1.5.1.md)，此前版本文档保留历史结果。测试使用合成文件；完整源码测试、Windows 原生交互及源码／EXE 自检分别记录，不相加冒充单次测试数量。Qt 可访问名称检查不代表完成屏幕阅读器或所有物理显示器缩放认证。公开工件规则见 [docs/RELEASE.md](docs/RELEASE.md)。
+本版实现与验证范围见 [docs/MULTIFILE_1.6.0.md](docs/MULTIFILE_1.6.0.md)，此前版本文档保留历史结果。测试使用合成文件；完整源码测试、Windows 原生交互及源码／EXE 自检分别记录，不相加冒充单次测试数量。Qt 可访问名称检查不代表完成屏幕阅读器或所有物理显示器缩放认证。公开工件规则见 [docs/RELEASE.md](docs/RELEASE.md)。
 
-See `docs/RELIABILITY_1.5.1.md` for current measured results and limits and `docs/GIF_1.5.0.md` for the GIF protocol. Full-source, native Windows interaction and source/EXE self-tests are separate runs using synthetic data. Qt accessibility-name checks do not certify a screen reader or every physical monitor configuration. Earlier versioned reports remain historical records.
+See `docs/MULTIFILE_1.6.0.md` for current behavior and verification scope and `docs/GIF_1.5.0.md` for the GIF protocol. Full-source, native Windows interaction and source/EXE self-tests are separate runs using synthetic data. Qt accessibility-name checks do not certify a screen reader or every physical monitor configuration. Earlier versioned reports remain historical records.
 
 双击 `运行测试.bat` 执行完整测试；命令行可选 `运行测试.bat core --no-pause` 或 `运行测试.bat full --no-pause`。入口只使用项目 `.venv`，缺失时创建它，并在其中安装所选模式的依赖，不向全局 Python 安装。测试失败的退出码会原样保留，暂停不会把失败变成成功。
 
@@ -166,11 +168,11 @@ Replace the example path with your own test directory. The check uses temporary 
 完成当前版本的干净构建与合成数据验证后，运行：
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\package_project.py --output releases\MoyleSteg-1.5.1-Full-Project.zip
+.\.venv\Scripts\python.exe scripts\package_project.py --output releases\MoyleSteg-1.6.0-Full-Project.zip
 ```
 
 打包脚本只纳入明确白名单中的源码、测试、资源、许可与公开说明，并保留当前便携运行目录，包括 `_internal/base_library.zip`。本地 `artifacts/`、私人数据、Git/虚拟环境/构建缓存、旧发布 ZIP 和本机调查报告不属于公开包。仅三份指定的历史格式合成测试夹具可位于 `tests/fixtures/`；真实 `.saes` 或 `.stegkey` 不随包发布。
 
 The packager includes allowlisted source, tests, assets, licenses and public documentation plus the current portable runtime. It excludes local reports, private data, development caches and old releases. The named legacy test fixtures contain synthetic data only. Nothing is uploaded.
 
-`SHA256SUMS.txt` 是首次导入 v1.0 文件的历史校验清单，不代表当前源码未变化。原始基线保存在维护者 Git 提交 `1e3026a73822e65d236e2f2b158713262f8705b1` 中；每个公开 ZIP 的 `RELEASE_MANIFEST.json` 记录本次实际文件大小与 SHA-256。当前变更与验证边界见 [docs/RELIABILITY_1.5.1.md](docs/RELIABILITY_1.5.1.md)，五张合成展示图见 [docs/RELIABILITY_1.4.1.md](docs/RELIABILITY_1.4.1.md)；其余版本化文档保留历史结果。依赖许可见 `THIRD_PARTY_NOTICES.md` 和便携包 `_internal/third_party_licenses/`。
+`SHA256SUMS.txt` 是首次导入 v1.0 文件的历史校验清单，不代表当前源码未变化。原始基线保存在维护者 Git 提交 `1e3026a73822e65d236e2f2b158713262f8705b1` 中；每个公开 ZIP 的 `RELEASE_MANIFEST.json` 记录本次实际文件大小与 SHA-256。当前变更与验证边界见 [docs/MULTIFILE_1.6.0.md](docs/MULTIFILE_1.6.0.md)，五张合成展示图见 [docs/RELIABILITY_1.4.1.md](docs/RELIABILITY_1.4.1.md)；其余版本化文档保留历史结果。依赖许可见 `THIRD_PARTY_NOTICES.md` 和便携包 `_internal/third_party_licenses/`。

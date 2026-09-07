@@ -1,0 +1,161 @@
+{
+  "synthetic_only": true,
+  "cross_direction_cases_passed": 12,
+  "cross_direction_member_extractions_checked": 60,
+  "legacy_desktop_1_5_1_fallback_cases_passed": 6,
+  "legacy_member_checks": 30,
+  "bundled_desktop_1_5_0_fallback_cases_passed": 6,
+  "bundled_reference_member_checks": 30,
+  "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+  "python_to_kotlin": [
+    {
+      "container": "python-key.png",
+      "container_sha256": "5452d6996fab828a72021e948551522f8fd466893c984e9ed153f3ddbf9349aa",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-key.gif",
+      "container_sha256": "fad0b4d292a2b954a4af1422ebd0246bb842c33d17dd61dbb376719ed99335c6",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-key.saes",
+      "container_sha256": "18207cd7d91f8b09a6ccadb0a76d113590199625ac8a3cd84cbcf26ac600829d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-password.png",
+      "container_sha256": "2a9d70456e332e4f8679876636fbdcfb282de47f6023aaaf26704dbe90a1a361",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-password.gif",
+      "container_sha256": "40e2f9ad1634e667fd665f64b63c42c44650a049dc213d7a705f6a31213d91e1",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    },
+    {
+      "container": "python-password.saes",
+      "container_sha256": "10d4cda95a66518c5a36646700c9d1293cb136e1769cf712ac76c6b403f989b6",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members": 5
+    }
+  ],
+  "kotlin_to_python": [
+    {
+      "container": "kotlin-key.png",
+      "format": "png",
+      "credential": "key",
+      "container_sha256": "2645116af2c75e8683811b2f53563995b2009209d5c2963388a0f648587bf46e",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.gif",
+      "format": "gif",
+      "credential": "key",
+      "container_sha256": "f3345f539a4c2c93be96e0f9246a3c8aa78396a77ac87724387a913ec9cab08c",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.saes",
+      "format": "saes",
+      "credential": "key",
+      "container_sha256": "a449d7b616f6d9e35030a03694349f59f15a608cee8fde2e80030cafb89c592d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.png",
+      "format": "png",
+      "credential": "password",
+      "container_sha256": "8a4087936d8dcfe37be360cda9f05b858f769f1cbcefe7fd63fea595de91cf09",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.gif",
+      "format": "gif",
+      "credential": "password",
+      "container_sha256": "52cfc5de0eb56418c2a0def265a053265eafd5f88146173d4c019fc8aedeff9d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.saes",
+      "format": "saes",
+      "credential": "password",
+      "container_sha256": "a0d12e023cc5b630495ce6a6304e0d2de0fdce76581640d4d4ec057e8ca1feaa",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    }
+  ],
+  "legacy_python_fallback": [
+    {
+      "container": "kotlin-key.png",
+      "format": "png",
+      "credential": "key",
+      "container_sha256": "2645116af2c75e8683811b2f53563995b2009209d5c2963388a0f648587bf46e",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.gif",
+      "format": "gif",
+      "credential": "key",
+      "container_sha256": "f3345f539a4c2c93be96e0f9246a3c8aa78396a77ac87724387a913ec9cab08c",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.saes",
+      "format": "saes",
+      "credential": "key",
+      "container_sha256": "a449d7b616f6d9e35030a03694349f59f15a608cee8fde2e80030cafb89c592d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.png",
+      "format": "png",
+      "credential": "password",
+      "container_sha256": "8a4087936d8dcfe37be360cda9f05b858f769f1cbcefe7fd63fea595de91cf09",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.gif",
+      "format": "gif",
+      "credential": "password",
+      "container_sha256": "52cfc5de0eb56418c2a0def265a053265eafd5f88146173d4c019fc8aedeff9d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.saes",
+      "format": "saes",
+      "credential": "password",
+      "container_sha256": "a0d12e023cc5b630495ce6a6304e0d2de0fdce76581640d4d4ec057e8ca1feaa",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "members_checked": 5,
+      "verified": true
+    }
+  ],
+  "legacy_reference_module_sha256": "9ecada37ec7a90e24429a83b399b67da6b112d35efdf90b6e947b4a002d3edd3"
+}

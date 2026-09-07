@@ -1,0 +1,72 @@
+{
+  "synthetic_only": true,
+  "direction": "Kotlin-to-Python",
+  "consumer": "bundled-desktop-1.5.0-full-ZIP-fallback",
+  "all_passed": true,
+  "reference_module_sha256": "3efe5802a38f08c2134938124a44ee19ac39fb1c2525a5fac3bd482b15459c0a",
+  "gif_reference_sha256": "75c9130a9540627af6bcf8dd19e8400cb6a391f6ca9739f9961f6c58a0cfb236",
+  "cases_passed": 6,
+  "member_checks": 30,
+  "cases": [
+    {
+      "container": "kotlin-key.png",
+      "format": "png",
+      "credential": "key",
+      "container_sha256": "2645116af2c75e8683811b2f53563995b2009209d5c2963388a0f648587bf46e",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "original_filename": "MoyleSteg-files.zip",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.gif",
+      "format": "gif",
+      "credential": "key",
+      "container_sha256": "f3345f539a4c2c93be96e0f9246a3c8aa78396a77ac87724387a913ec9cab08c",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "original_filename": "MoyleSteg-files.zip",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-key.saes",
+      "format": "saes",
+      "credential": "key",
+      "container_sha256": "a449d7b616f6d9e35030a03694349f59f15a608cee8fde2e80030cafb89c592d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "original_filename": "MoyleSteg-files.zip",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.png",
+      "format": "png",
+      "credential": "password",
+      "container_sha256": "8a4087936d8dcfe37be360cda9f05b858f769f1cbcefe7fd63fea595de91cf09",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "original_filename": "MoyleSteg-files.zip",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.gif",
+      "format": "gif",
+      "credential": "password",
+      "container_sha256": "52cfc5de0eb56418c2a0def265a053265eafd5f88146173d4c019fc8aedeff9d",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "original_filename": "MoyleSteg-files.zip",
+      "members_checked": 5,
+      "verified": true
+    },
+    {
+      "container": "kotlin-password.saes",
+      "format": "saes",
+      "credential": "password",
+      "container_sha256": "a0d12e023cc5b630495ce6a6304e0d2de0fdce76581640d4d4ec057e8ca1feaa",
+      "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+      "original_filename": "MoyleSteg-files.zip",
+      "members_checked": 5,
+      "verified": true
+    }
+  ]
+}

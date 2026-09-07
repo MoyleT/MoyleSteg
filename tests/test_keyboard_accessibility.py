@@ -95,7 +95,8 @@ def test_form_tab_and_backtab_order_reveals_controls_without_manual_scroll(qtbot
     before = (form['input'].edit.text(), form['password'].text(), form['confirm'].text())
     _assert_order(window, [
         form['cover'].edit, form['cover'].browse,
-        form['input'].edit, form['input'].browse, form['preflight'],
+        form['input'].edit, form['input'].browse, form['input'].list,
+        form['input'].remove, form['input'].clear_files, form['preflight'],
         form['credential'], form['password'], form['confirm'], form['show'],
         form['output'].edit, form['output'].browse, form['resize'],
         form['force'], form['run'],

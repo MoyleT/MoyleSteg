@@ -124,9 +124,15 @@ class GifViewModelTest {
     }
 
     @Test fun gifReadOnlyVerificationBindsBothDigestsAndDoesNotStagePlaintext() {
-        val bytes = hide().staged!!.readBytes()
+        val hidden = hide()
+        val bytes = hidden.staged!!.readBytes()
         File(directory, "hidden.gif").writeBytes(bytes)
-        vm.page(1); vm.operation(Operation.VERIFY)
+        vm.page(1)
+        assertNotNull(vm.state.value.discardRequest)
+        assertSame(hidden, vm.state.value.result)
+        vm.confirmDiscard()
+        assertFalse(hidden.staged.exists())
+        vm.operation(Operation.VERIFY)
         vm.pick(DocSlot.INPUT, uri("hidden.gif")); settle()
         vm.run(); settle(); assertNull(vm.state.value.error)
         val result = vm.state.value.result!!
@@ -136,9 +142,15 @@ class GifViewModelTest {
     }
 
     @Test fun gifRestoreKeepsOriginalFilenameAndBytesWithAutoExpandStillEnabled() {
-        val bytes = hide().staged!!.readBytes()
+        val hidden = hide()
+        val bytes = hidden.staged!!.readBytes()
         File(directory, "hidden.gif").writeBytes(bytes)
-        vm.page(1); vm.pick(DocSlot.INPUT, uri("hidden.gif")); settle()
+        vm.page(1)
+        assertNotNull(vm.state.value.discardRequest)
+        assertSame(hidden, vm.state.value.result)
+        vm.confirmDiscard()
+        assertFalse(hidden.staged.exists())
+        vm.pick(DocSlot.INPUT, uri("hidden.gif")); settle()
         assertTrue(vm.state.value.autoExpand)
         vm.run(); settle(); assertNull(vm.state.value.error)
         val result = vm.state.value.result!!

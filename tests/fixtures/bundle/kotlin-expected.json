@@ -1,0 +1,6 @@
+{
+                  "archive": "kotlin-bundle.zip",
+                  "sha256": "593640fcf16c4c0cdd80f430ebe16c4fd677583e45625f8f90fdcab7c22fa6a3",
+                  "total_bytes": 180024,
+                  "entries": [{"index":1,"name":"草莓.txt","size":24,"sha256":"1d533ed1571c5cae1abc29eb778eff2046f182a47f57bc56078df839f87722c8"},{"index":2,"name":"草莓.txt","size":180000,"sha256":"252d829217aaec1f13d3ad2972c8939ca00ae25379f073bdb32aba4442588898"},{"index":3,"name":"empty.bin","size":0,"sha256":"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}]
+                }

@@ -20,6 +20,7 @@ def _project(root: Path) -> Path:
         ".gitignore": b".venv/\n*.stegkey\n",
         "png_steg_aes256.py": b"# synthetic engine\n",
         "gif_carrier.py": b"# synthetic GIF carrier codec\n",
+        "moyle_bundle.py": b"# synthetic multi-file bundle codec\n",
         "moyle_steg/__init__.py": b'__version__ = "1.2.2"\n',
         "README_DESKTOP.md": b"Public desktop instructions\n",
         "requirements-test.txt": b"# synthetic full-suite dependencies\n",
@@ -34,10 +35,13 @@ def _project(root: Path) -> Path:
         "docs/RECOVERY_1.4.0.md": b"Synthetic current recovery summary\n",
         "docs/RELIABILITY_1.4.1.md": b"Synthetic current reliability summary\n",
         "docs/GIF_1.5.0.md": b"Synthetic GIF protocol and verification notes\n",
+        "docs/MULTIFILE_1.6.0.md": b"Synthetic multi-file protocol and verification notes\n",
         "tests/test_example.py": b"def test_example(): pass\n",
         "tests/fixtures/legacy-v1.png": b"synthetic legacy PNG fixture\n",
         "tests/fixtures/legacy-v1.saes": b"synthetic legacy SAES fixture\n",
         "tests/fixtures/legacy-posix-name.saes": b"synthetic POSIX filename fixture\n",
+        "tests/fixtures/bundle/kotlin-bundle.zip": b"synthetic Kotlin bundle fixture\n",
+        "tests/fixtures/bundle/kotlin-expected.json": b"{}\n",
         "assets/app.svg": b"<svg xmlns='http://www.w3.org/2000/svg'/>\n",
         "assets/strawberry-sticker.png": b"synthetic-strawberry-sticker\n",
         "assets/cherry-sticker.png": b"synthetic-cherry-sticker\n",
@@ -49,6 +53,7 @@ def _project(root: Path) -> Path:
         "dist/MoyleSteg/docs/RECOVERY_1.4.0.md": b"Synthetic current recovery summary\n",
         "dist/MoyleSteg/docs/RELIABILITY_1.4.1.md": b"Synthetic current reliability summary\n",
         "dist/MoyleSteg/docs/GIF_1.5.0.md": b"Synthetic GIF protocol and verification notes\n",
+        "dist/MoyleSteg/docs/MULTIFILE_1.6.0.md": b"Synthetic multi-file protocol and verification notes\n",
         "dist/MoyleSteg/_internal/base_library.zip": b"PK-synthetic-required-runtime-archive\n",
         "dist/MoyleSteg/_internal/assets/strawberry-sticker.png": b"synthetic-strawberry-sticker\n",
         "dist/MoyleSteg/_internal/assets/cherry-sticker.png": b"synthetic-cherry-sticker\n",
@@ -83,6 +88,7 @@ def test_public_archive_excludes_private_sentinels_but_keeps_nested_runtime_zip(
         "assets/unapproved-sticker.png",
         "docs/screenshots/private-ui.png", "docs/screenshots/private-report.json",
         "docs/screenshots/nested/theme-midnight.png",
+        "tests/fixtures/bundle/private.zip", "tests/fixtures/bundle/private.json",
     )
     for name in private_paths:
         path = root / name
@@ -125,6 +131,11 @@ def test_public_archive_excludes_private_sentinels_but_keeps_nested_runtime_zip(
         assert prefix + "tests/test_example.py" in members
         assert prefix + "tests/fixtures/legacy-v1.saes" in members
         assert prefix + "tests/fixtures/legacy-posix-name.saes" in members
+        assert prefix + "moyle_bundle.py" in members
+        assert prefix + "docs/MULTIFILE_1.6.0.md" in members
+        assert prefix + "dist/MoyleSteg/docs/MULTIFILE_1.6.0.md" in members
+        assert archive.read(prefix + 'tests/fixtures/bundle/kotlin-bundle.zip') == b'synthetic Kotlin bundle fixture\n'
+        assert archive.read(prefix + 'tests/fixtures/bundle/kotlin-expected.json') == b'{}\n'
         for path in private_paths:
             assert prefix + path not in members
         for name in members:

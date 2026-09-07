@@ -568,6 +568,110 @@ def _gif_diagnostic_checks(work, *, password, key_path):
     return checks, results
 
 
+def _multifile_diagnostic_checks(app, window, work, report_path, password):
+    """Exercise the packaged multi-file controls with duplicate synthetic names."""
+    sources = (work / 'bundle-one' / 'notes.txt', work / 'bundle-two' / 'notes.txt')
+    for index, path in enumerate(sources):
+        path.parent.mkdir()
+        path.write_bytes(f'Synthetic bundle member {index + 1}\n'.encode() * 10)
+    cover, container = work / 'bundle-cover.png', work / 'bundle-output.png'
+    Image.new('RGB', (180, 160), '#344d79').save(cover)
+    form = window.forms['hide']
+    form['cover'].edit.setText(str(cover))
+    form['input'].set_paths(map(str, sources))
+    form['output'].edit.setText(str(container))
+    _set_credentials(form, password)
+    result = _click_operation(app, window, 'hide')
+    if result.details.get('file_count') != '2' or not container.is_file():
+        raise AssertionError('Multi-file UI did not create a PNG bundle')
+    checks = ['ui_bundle_create']
+    destination = work / 'bundle-restored'
+    form = window.forms['extract']
+    form['original_name'].setChecked(True)
+    form['budget'].pixels.setValue(25_000_000)
+    form['budget'].toggle.setChecked(False)
+    form['input'].edit.setText(str(container))
+    form['output'].edit.setText(str(destination))
+    _set_credentials(form, password)
+    result = _click_operation(app, window, 'extract')
+    session = result.bundle
+    if session is None or len(session.info.entries) != 2 or destination.exists():
+        raise AssertionError('Managed bundle was not listed privately before member saving')
+    if form['password'].text():
+        raise AssertionError('Authenticated recovery retained its password')
+    checks.append('ui_bundle_authenticated_list')
+    window._select_members(False)
+    window._bundle_checks[2].setChecked(True)
+    window.scroll.ensureWidgetVisible(window.bundle_save_selected, 0, 8)
+    app.processEvents()
+    _save(window.grab(), report_path.parent / 'multifile-authenticated-list.png')
+
+    def save(button, label):
+        button.click()
+        if not window.busy:
+            raise AssertionError('Bundle save button did not start its worker')
+        _wait_until(app, lambda: not window.busy, description=label)
+        if window.last_result is None or window.last_result.title != 'bundle_saved':
+            raise AssertionError('Authenticated bundle save failed')
+
+    save(window.bundle_save_selected, 'selected bundle member save')
+    if set(session.saved) != {2}:
+        raise AssertionError('Selectively saving a bundle wrote unselected members')
+    checks.append('ui_bundle_selected_save')
+    save(window.bundle_save_all, 'remaining bundle members save')
+    if set(session.saved) != {1, 2}:
+        raise AssertionError('Save pending files did not finish the bundle')
+    paths = [Path(session.saved[index].path) for index in (1, 2)]
+    if paths[0] == paths[1] or any(path.read_bytes() != source.read_bytes() for path, source in zip(paths, sources)):
+        raise AssertionError('Duplicate bundle basenames overwrote data or changed member bytes')
+    checks.append('ui_bundle_remaining_save')
+    save(window.bundle_save_zip, 'complete bundle ZIP fallback')
+    archive = Path(session.archive_saved)
+    if hashlib.sha256(archive.read_bytes()).hexdigest() != session.archive_sha256:
+        raise AssertionError('Saved complete ZIP differs from the authenticated archive')
+    checks.append('ui_bundle_zip_fallback')
+    from .widgets import ElidedPathLabel
+
+    def capture_saved_rows(filename):
+        window.scroll.ensureWidgetVisible(window.bundle_panel, 0, 8)
+        app.processEvents()
+        app.processEvents()
+        labels = window.bundle_panel.findChildren(ElidedPathLabel)
+        if len(labels) != 3 or any(label.height() < label.fontMetrics().height() + 2 for label in labels):
+            raise AssertionError('Saved bundle paths were compressed below a readable line height')
+        # A nested scroll area's height changes immediately; ancestor layout
+        # requests may take several event-loop passes before a faithful capture.
+        _wait_until(app, lambda: (
+            window.bundle_member_scroll.geometry().bottom() < window.bundle_output.geometry().top()
+            and max(label.mapTo(window.bundle_panel, label.rect().bottomRight()).y() for label in labels)
+                < window.bundle_output.label.mapTo(window.bundle_panel, QPoint(0, 0)).y()),
+            timeout=3, description='bundle rows and save folder to occupy separate layout regions')
+        if window.bundle_member_scroll.verticalScrollBar().maximum() != 0:
+            raise AssertionError(f'Two compact saved members should fit inside the bounded list viewport: {filename}')
+        for index in range(window.bundle_members.count()):
+            row = window.bundle_members.itemAt(index).widget()
+            if row.height() < row.minimumSizeHint().height():
+                raise AssertionError('Bundle list compressed a saved member row')
+        _save(window.grab(), report_path.parent / filename)
+
+    capture_saved_rows('multifile-saved-result.png')
+    checks.append('ui_bundle_saved_rows')
+    previous_size, previous_text = window.size(), window.text_size
+    window.set_text_size('large')
+    window.resize(760, 480)
+    capture_saved_rows('multifile-saved-result-narrow.png')
+    checks.append('ui_bundle_narrow_saved_rows')
+    window.set_text_size(previous_text)
+    window.resize(previous_size)
+    window._clear_bundle_result()
+    if not session.closed or session.archive.exists() or any(not path.is_file() for path in (*paths, archive)):
+        raise AssertionError('Bundle cleanup removed public files or retained its private archive')
+    checks.append('ui_bundle_private_cleanup')
+    return checks, {'members': 2, 'via': 'native UI', 'duplicate_names_preserved': True,
+                    'restored_hashes_match': True, 'saved_files_survive_cleanup': True,
+                    'archive_matches_authenticated_sha256': True}
+
+
 def self_test(app, report_path: Path) -> int:
     report_path = report_path.resolve()
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -769,6 +873,9 @@ def self_test(app, report_path: Path) -> int:
 
             gif_checks, report["gif_roundtrips"] = _gif_diagnostic_checks(work, password=password, key_path=key)
             report["checks"].extend(gif_checks)
+            bundle_checks, report['multi_file'] = _multifile_diagnostic_checks(
+                app, window, work, report_path, password)
+            report['checks'].extend(bundle_checks)
 
             # Cancel through the visible button immediately after starting a
             # password operation, before its commit. No thread is terminated.

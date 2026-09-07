@@ -146,6 +146,12 @@ def test_runtime_self_test_produces_bilingual_render_and_real_roundtrip_report(q
             "ui_zh_CN", "ui_en_US"} <= set(result["checks"])
     assert {"ui_png_original_filename_roundtrip", "ui_saes_original_filename_roundtrip"} <= set(result["checks"])
     assert {"ui_exact_preflight", "ui_verify_png", "ui_verify_saes", "ui_safe_cancel"} <= set(result["checks"])
+    assert {'ui_bundle_create', 'ui_bundle_authenticated_list', 'ui_bundle_selected_save',
+            'ui_bundle_remaining_save', 'ui_bundle_zip_fallback', 'ui_bundle_private_cleanup',
+            'ui_bundle_saved_rows', 'ui_bundle_narrow_saved_rows'} <= set(result['checks'])
+    assert result['multi_file']['members'] == 2
+    assert result['multi_file']['restored_hashes_match'] is True
+    assert result['multi_file']['saved_files_survive_cleanup'] is True
     assert {'ui_cancel_keeps_retry_credentials', 'ui_close_clears_all_credentials'} <= set(result['checks'])
     assert result['credential_lifecycle'] == {
         'cancel_password_retained': True,
@@ -163,7 +169,7 @@ def test_runtime_self_test_produces_bilingual_render_and_real_roundtrip_report(q
         assert association["same_size"] is True
         assert association["mtime_restored"] is True
         assert association["outcome"] in {"captured_original", "input_changed"}
-    assert clicked == ["hide", "extract", "extract", "extract", "extract", "keygen", "crypt", "crypt", "verify", "verify", "crypt"]
+    assert clicked == ["hide", "extract", "extract", "extract", "extract", "keygen", "crypt", "crypt", "verify", "verify", "hide", "extract", "crypt"]
     assert {'ui_recovery_pixel_budget_rejected', 'ui_recovery_same_png_after_budget_increase'} <= set(result['checks'])
     recovery = result['recovery_budget']
     assert recovery['via'] == 'ui'

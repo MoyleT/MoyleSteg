@@ -234,6 +234,7 @@ class AutoExpandViewModelTest {
 
     class SyntheticDocuments(private val directory: File) : ContentProvider() {
         var writeRequests = 0
+        var readRequests = 0
         var reportSize = true
         override fun onCreate() = true
         private fun file(uri: Uri): File {
@@ -261,6 +262,7 @@ class AutoExpandViewModelTest {
 
         override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
             if (mode != "r") { writeRequests++; throw IllegalStateException("input must be read-only") }
+            readRequests++
             return ParcelFileDescriptor.open(file(uri), ParcelFileDescriptor.MODE_READ_ONLY)
         }
         override fun getType(uri: Uri) = if (uri.lastPathSegment.orEmpty().endsWith(".png")) "image/png" else "application/octet-stream"

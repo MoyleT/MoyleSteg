@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,14 +50,26 @@ fun MoyleApp(vm: MoyleViewModel) {
     val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if(uri!=null)vm.pick(DocSlot.valueOf(slot),uri)
     }
+    val multiplePicker=rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()){uris->vm.pickInputs(uris)}
+    var exportToken by rememberSaveable{mutableStateOf<Long?>(null)}
+    fun finishExport(uri:android.net.Uri?){exportToken?.let{vm.completeExport(it,uri)};exportToken=null}
     // Separate launchers preserve accurate MIME hints in document providers.
-    val savePng=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")){uri->if(uri!=null)vm.export(uri)}
-    val saveGif=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/gif")){uri->if(uri!=null)vm.export(uri)}
-    val saveBinary=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")){uri->if(uri!=null)vm.export(uri)}
+    val savePng=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")){uri->finishExport(uri)}
+    val saveGif=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/gif")){uri->finishExport(uri)}
+    val saveBinary=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")){uri->finishExport(uri)}
+    val saveZip=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")){uri->finishExport(uri)}
     fun select(next: DocSlot){slot=next.name;picker.launch(if(next==DocSlot.COVER)arrayOf("image/png","image/jpeg","image/gif")else arrayOf("*/*"))}
     BackHandler(s.busy){vm.requestCancel()}
+    BackHandler(!s.busy && s.page==3){vm.page(vm.operationPage())}
     MoyleTheme(s.theme,s.largeText){
         val c=MaterialTheme.colorScheme
+        s.discardRequest?.let{
+            AlertDialog(onDismissRequest=vm::keepCurrentWork,
+                title={Text("有成果尚未保存")},
+                text={Text("继续会清除当前结果和私有暂存文件；未保存的成品、密钥或剩余恢复成员将被丢弃。原始输入及已保存到 Download 或其他位置的文件会保留。")},
+                confirmButton={TextButton(onClick=vm::confirmDiscard){Text("丢弃并继续")}},
+                dismissButton={TextButton(onClick=vm::keepCurrentWork){Text("保留，返回保存")}})
+        }
         Scaffold(containerColor=c.background,
             bottomBar={NavigationBar(containerColor=c.surface){
                 listOf("隐藏","恢复","工具","设置").forEachIndexed { i,label ->
@@ -77,7 +90,7 @@ fun MoyleApp(vm: MoyleViewModel) {
                     item {
                         Text(when(s.page){0->"把秘密藏进\n一张图片";1->"找回属于你的文件";2->"密钥与文件工具";else->"你的工坊"},style=MaterialTheme.typography.headlineLarge)
                         Spacer(Modifier.height(6.dp))
-                        Text("0.3.2-alpha · 重要文件请保留独立备份。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
+                        Text("0.4.1-alpha · 重要文件请保留独立备份。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                     }
                     if(s.page==3){
                         item{Section("外观"){
@@ -88,6 +101,7 @@ fun MoyleApp(vm: MoyleViewModel) {
                         }}
                         item{ResourcesPanel(s,vm)}
                         item{Section("当前能力与边界"){
+                            Text("支持一次选择最多 100 个文件：自动打包、统一加密；新版恢复时可选择全部或部分文件，旧版可恢复出标准 ZIP 后自行解压。普通 ZIP 仍按单文件恢复。")
                             Text("独立 SAES 加密、恢复与只读验证支持最高 1 GiB 原文件，使用固定大小缓冲；仍需足够临时磁盘和口令派生内存。")
                             Text("PNG／GIF 的秘密文件上限 32 MiB、完整容器上限 128 MiB、像素上限 1 亿，仍受本次内存预算约束。这些是处理上限，不保证所有手机都能处理到上限。",style=MaterialTheme.typography.bodySmall)
                             Text("支持非交错的 8 位 RGB／RGBA PNG，包括桌面 1.4.1 的标准输出。灰度、调色板、16 位、交错与动画 PNG 会被明确拒绝。",style=MaterialTheme.typography.bodySmall)
@@ -120,7 +134,9 @@ fun MoyleApp(vm: MoyleViewModel) {
                         }else{
                             item{Section("01 / 选择文件"){
                                 if(s.operation==Operation.HIDE)DocumentField("JPG／PNG／GIF 载体",s.cover,!s.busy,probe=s.coverProbe){select(DocSlot.COVER)}
-                                DocumentField(if(s.operation in listOf(Operation.HIDE,Operation.ENCRYPT))"秘密文件"else "PNG／GIF／SAES 容器",s.input,!s.busy,probe=s.inputProbe){select(DocSlot.INPUT)}
+                                if(s.operation in listOf(Operation.HIDE,Operation.ENCRYPT)){
+                                    SecretFilesField(s,vm){multiplePicker.launch(arrayOf("*/*"))}
+                                }else DocumentField("PNG／GIF／SAES 容器",s.input,!s.busy,probe=s.inputProbe){select(DocSlot.INPUT)}
                                 if(s.operation==Operation.ENCRYPT)Text("独立 SAES 支持最高 1 GiB 原文件，不需要图片载体；成品保持电脑版兼容格式。接收端仍需允许相应的恢复预算。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                                 if(s.operation==Operation.HIDE){
                                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically){
@@ -148,11 +164,11 @@ fun MoyleApp(vm: MoyleViewModel) {
                             }}
                             item{
                                 Button(onClick={vm.run()},enabled=!s.busy && !s.selecting,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){
-                                    Text(when(s.operation){Operation.HIDE->"加密并隐藏文件";Operation.ENCRYPT->"加密为 SAES";Operation.VERIFY->"验证，不导出明文";else->"恢复到下载文件夹"})
+                                    Text(when(s.operation){Operation.HIDE->"加密并隐藏文件";Operation.ENCRYPT->"加密为 SAES";Operation.VERIFY->"验证，不导出明文";else->"认证并恢复文件"})
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Text(when(s.operation){
-                                    Operation.RESTORE->"认证成功后自动保存到 Download，同名文件另取名称。完成后可直接选择应用打开。"
+                                    Operation.RESTORE->"单文件自动保存到 Download；多文件包先显示清单，由你选择。已保存的文件可直接选择应用打开。"
                                     Operation.VERIFY->"仅验证本次读取的数据，不会向下载文件夹写出恢复文件。"
                                     else->"处理通过后，再由你选择保存位置。不会自动覆盖原文件。"
                                 },style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
@@ -179,21 +195,25 @@ fun MoyleApp(vm: MoyleViewModel) {
                             Text("输入：${r.inputLabel}\n完成于：${r.at}",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                             if(r.download!=null)Text("已保存至：${r.download.displayPath}",style=MaterialTheme.typography.bodySmall)
                             else if(r.exportedUri!=null)Text("已保存至所选位置",style=MaterialTheme.typography.bodySmall)
+                            if(r.bundle!=null)BundleMembers(r,!s.busy,vm)
                             if(r.restored && r.exportedUri!=null){
                                 Button(onClick={
                                     val outcome=RestoredFileActions.open(context,r.exportedUri,r.mime)
                                     if(outcome is OpenOutcome.Unavailable)vm.reportOpenFailure(outcome.message)
-                                },enabled=!s.busy,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){Text("打开文件")}
+                                },enabled=!s.busy,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){Text(if(r.bundle!=null)"打开完整压缩包"else "打开文件")}
                                 Text("选择一个应用查看；如果系统提示没有可用应用，可安装支持此格式的应用后再打开，文件已经保存。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
-                            }else if(r.restored && r.staged!=null){
+                            }else if(r.restored && r.staged!=null && r.bundle==null){
                                 Button(onClick=vm::saveRestoredToDownloads,enabled=!s.busy,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){
                                     Text(if(r.needsStoragePermission)"授权并保存到下载文件夹" else "重试保存到下载文件夹")
                                 }
                             }
                             if(r.staged!=null){
-                                val saveCopy={when(r.mime){"image/png"->savePng.launch(r.suggestedName);"image/gif"->saveGif.launch(r.suggestedName);else->saveBinary.launch(r.suggestedName)}}
+                                val saveCopy={
+                                    exportToken=vm.requestExport()
+                                    if(exportToken!=null)when(r.mime){"image/png"->savePng.launch(r.suggestedName);"image/gif"->saveGif.launch(r.suggestedName);"application/zip"->saveZip.launch(r.suggestedName);else->saveBinary.launch(r.suggestedName)}
+                                }
                                 if(r.restored)OutlinedButton(onClick=saveCopy,enabled=!s.busy && !s.selecting,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){
-                                    Text(if(r.exportedUri==null)"选择其他位置保存" else "另存一份")
+                                    Text(if(r.bundle!=null)"保存完整压缩包"else if(r.exportedUri==null)"选择其他位置保存" else "另存一份")
                                 }else Button(onClick=saveCopy,enabled=!s.busy && !s.selecting,modifier=Modifier.fillMaxWidth().heightIn(min=50.dp)){
                                     Text(if(r.exportedUri==null)"选择位置并保存"else "另存一份")
                                 }
@@ -202,12 +222,12 @@ fun MoyleApp(vm: MoyleViewModel) {
                             TextButton(onClick={detail=!detail}){Text(if(detail)"收起技术信息"else "展开摘要与技术信息")}
                             if(detail)SelectionContainer{Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
                                 if(r.restored)Text("认证的原文件名：${r.filename}",style=MaterialTheme.typography.bodySmall)
-                                if(r.contentHash.isNotEmpty())HashText("原文件 SHA-256",r.contentHash)
+                                if(r.contentHash.isNotEmpty())HashText(if(r.bundle!=null)"完整 ZIP 载荷 SHA-256"else "原文件 SHA-256",r.contentHash)
                                 if(r.containerHash.isNotEmpty())HashText("完整容器／密钥文件 SHA-256",r.containerHash)
                                 if(r.exportedUri!=null)Text("保存文件 URI：${r.exportedUri}",style=MaterialTheme.typography.bodySmall)
                                 Text("AES-256-GCM · 格式 v1 · 对应本次捕获数据",style=MaterialTheme.typography.bodySmall)
                             }}
-                            TextButton(onClick=vm::clearResult,enabled=!s.busy){Text(if(r.restored && r.exportedUri!=null)"清空结果（已保存文件保留）" else "清空结果与私有成品")}
+                            TextButton(onClick=vm::requestClearResult,enabled=!s.busy){Text(if(r.restored && (r.exportedUri!=null || r.members.any{it.saved!=null}))"清空结果（已保存文件保留）" else "清空结果与私有成品")}
                         }
                     }}
                     item{Spacer(Modifier.height(8.dp));Text("让私密文件，隐于像素之间。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)}
@@ -215,6 +235,67 @@ fun MoyleApp(vm: MoyleViewModel) {
             }
         }
     }
+}
+
+@Composable private fun SecretFilesField(s:UiState,vm:MoyleViewModel,onChoose:()->Unit){
+    val files=s.inputs.ifEmpty{listOfNotNull(s.input)}
+    val known=files.map{s.inputSizes[it.uri] ?: if(files.size==1)s.inputProbe?.size else null}
+    Text("秘密文件 · ${files.size} / 100",style=MaterialTheme.typography.labelLarge)
+    if(files.isNotEmpty()){
+        Text(if(known.all{it!=null})"原始合计：${displayFileBytes(known.filterNotNull().sum())}"else "部分文件大小待读取；实际容量预检会完整计算。",style=MaterialTheme.typography.bodySmall)
+        Column(Modifier.fillMaxWidth().heightIn(max=260.dp).verticalScroll(androidx.compose.foundation.rememberScrollState())){
+            files.forEachIndexed{index,doc->
+                Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
+                    Column(Modifier.weight(1f)){
+                        Text(doc.name,maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodyMedium)
+                        Text(known[index]?.let(::displayFileBytes) ?: "大小待读取",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    TextButton(onClick={vm.removeInput(doc.uri)},enabled=!s.busy){Text("移除")}
+                }
+            }
+        }
+    }
+    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+        OutlinedButton(onClick=onChoose,enabled=!s.busy && !s.selecting && files.size<100,modifier=Modifier.weight(1f)){
+            Text(if(files.isEmpty())"选择一个或多个文件"else "添加文件")
+        }
+        if(files.isNotEmpty())TextButton(onClick=vm::clearInputs,enabled=!s.busy){Text("清空")}
+    }
+    if(files.size>1)Text("这些文件会先打包为标准 ZIP，再统一加密。所有文件使用同一组口令或密钥；文件总量和 ZIP 开销共同占用容量。",style=MaterialTheme.typography.bodySmall)
+}
+@Composable private fun BundleMembers(r:JobResult,enabled:Boolean,vm:MoyleViewModel){
+    val context=LocalContext.current
+    val selected=r.members.count{it.selected && it.saved==null}
+    Text("${r.members.size} 个文件 · 合计 ${displayFileBytes(r.bundle!!.totalBytes)}",style=MaterialTheme.typography.labelLarge)
+    Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){
+        TextButton(onClick={vm.selectAllRestoredMembers(true)},enabled=enabled){Text("全选未保存项")}
+        TextButton(onClick={vm.selectAllRestoredMembers(false)},enabled=enabled){Text("取消选择")}
+    }
+    Column(Modifier.fillMaxWidth().heightIn(max=340.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)){
+        r.members.forEach{member->
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){
+                Checkbox(checked=member.selected,onCheckedChange={vm.selectRestoredMember(member.entry.index,it)},enabled=enabled && member.saved==null)
+                Column(Modifier.weight(1f)){
+                    Text(member.saved?.displayName ?: member.entry.name,style=MaterialTheme.typography.bodyMedium,maxLines=2,overflow=TextOverflow.Ellipsis)
+                    Text(displayFileBytes(member.entry.size),style=MaterialTheme.typography.bodySmall)
+                    member.saved?.let{Text(it.displayPath,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.primary)}
+                    member.error?.let{Text(it,style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.error)}
+                }
+                member.saved?.let{saved->TextButton(enabled=enabled,onClick={
+                    val outcome=RestoredFileActions.open(context,saved.uri,saved.mime)
+                    if(outcome is OpenOutcome.Unavailable)vm.reportOpenFailure(outcome.message)
+                }){Text("打开")}}
+            }
+        }
+    }
+    Button(onClick=vm::saveBundleSelection,enabled=enabled && selected>0,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){
+        Text(if(r.needsStoragePermission)"授权并保存 $selected 个文件"else "保存选中的 $selected 个文件到 Download")
+    }
+}
+private fun displayFileBytes(bytes:Long):String=when{
+    bytes>=1024*1024->String.format(java.util.Locale.ROOT,"%.2f MiB",bytes/1048576.0)
+    bytes>=1024->String.format(java.util.Locale.ROOT,"%.1f KiB",bytes/1024.0)
+    else->"$bytes 字节"
 }
 
 @Composable private fun Section(title: String,content: @Composable ColumnScope.()->Unit){

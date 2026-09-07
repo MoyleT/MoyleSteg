@@ -8,13 +8,13 @@ from PySide6.QtGui import QDesktopServices, QPalette, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QComboBox, QLineEdit, QCheckBox, QDoubleSpinBox,
-    QScrollArea, QFileDialog, QTextBrowser, QSizePolicy, QGraphicsOpacityEffect,
+    QScrollArea, QFileDialog, QTextBrowser, QSizePolicy, QGraphicsOpacityEffect, QLayout,
 )
 
 from .i18n import tr, TEXT
 from . import __version__
 from .theme import THEMES, DEFAULT_THEME, get_theme, build_stylesheet, build_palette
-from .widgets import BrandMark, Card, FileField, ImagePreview, PageStack, ActionButton, FruitAccent, WrapTextLabel, line_icon
+from .widgets import BrandMark, Card, FileField, MultiFileField, ImagePreview, PageStack, ActionButton, FruitAccent, WrapTextLabel, ElidedPathLabel, BundleMemberCheckBox, line_icon
 from .progress import ThemedProgressBar
 from .recovery import RecoveryBudgetPanel
 from .layout import ResponsiveColumns, fit_window_to_screen
@@ -55,6 +55,9 @@ class MainWindow(QMainWindow):
         self._active_operation = None
         self._close_when_finished = False
         self.last_result = None
+        self._retired_sessions = []
+        self._bundle_selection = {}
+        self._bundle_identity = None
         self._result_page = None
         self._active_page = None
         self._successful_credential_page = None
@@ -180,6 +183,8 @@ class MainWindow(QMainWindow):
         self.text_size_combo.blockSignals(False)
         self.set_theme(self.theme_id)
         self._apply_text_metrics()
+        if self.last_result is not None and self.last_result.bundle is not None:
+            self._resize_bundle_viewport()
 
     def _apply_text_metrics(self):
         large = self.text_size == 'large'
@@ -408,7 +413,8 @@ class MainWindow(QMainWindow):
         return card.body
 
     def _file(self, layout, page, name, label, filter_key='all_filter', save=False):
-        field = FileField(page + '_' + name, save=save)
+        field = (MultiFileField(page + '_' + name) if name == 'input' and page in ('hide', 'crypt')
+                 else FileField(page + '_' + name, save=save))
         self._bind(field.label, label)
         self._bind(field.browse, 'browse')
         self._bind(field.edit, 'save_hint' if save else 'path_hint', 'setPlaceholderText')
@@ -643,6 +649,7 @@ class MainWindow(QMainWindow):
             return
         self._credential_changed('crypt')
         mode = 'encrypt' if self.forms['crypt']['mode'].currentIndex() == 0 else 'decrypt'
+        self.forms['crypt']['input'].set_multiple(mode == 'encrypt')
         self.forms['crypt']['run'].setText(self.t('run_' + mode))
         self._output_mode_changed('crypt')
         if getattr(self, '_crypt_mode', mode) != mode:
@@ -663,7 +670,7 @@ class MainWindow(QMainWindow):
         self._input_versions[page] = self._input_versions.get(page, 0) + 1
         self._update_budget(page)
         if self._result_page == page:
-            self.last_result = None
+            self._release_result()
             self._result_page = None
             self.result_card.hide()
             self.copy_button.setEnabled(False)
@@ -757,7 +764,8 @@ class MainWindow(QMainWindow):
             elif filter_key == 'key_filter':
                 dialog.setDefaultSuffix('stegkey')
         else:
-            dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+            dialog.setFileMode(QFileDialog.FileMode.ExistingFiles if getattr(field, 'multiple', False)
+                               else QFileDialog.FileMode.ExistingFile)
         # Qt resets this label when changing its file/accept mode.
         dialog.setLabelText(QFileDialog.DialogLabel.Accept, ('选择文件夹' if chinese else 'Select folder') if directory else (('保存' if chinese else 'Save') if field.save else ('打开' if chinese else 'Open')))
         if directory and field.edit.text():
@@ -768,7 +776,10 @@ class MainWindow(QMainWindow):
         elif field.edit.text():
             dialog.selectFile(field.edit.text())
         if dialog.exec() and dialog.selectedFiles():
-            field.edit.setText(dialog.selectedFiles()[0])
+            if getattr(field, 'multiple', False):
+                field.set_paths((*field.paths(), *dialog.selectedFiles()))
+            else:
+                field.edit.setText(dialog.selectedFiles()[0])
 
     def show_page(self, key):
         changed = getattr(self, 'current_page', None) != key
@@ -817,6 +828,8 @@ class MainWindow(QMainWindow):
         for field, key in self._file_fields:
             field.edit.setAccessibleName(self.t(key))
             field.browse.setAccessibleName(self.t('browse') + ' ' + self.t(key))
+            if isinstance(field, MultiFileField):
+                field.set_language(code)
         for key in ('hide', 'extract', 'crypt', 'verify'):
             form = self.forms[key]
             form['credential'].setItemText(0, self.t('password'))
@@ -843,8 +856,8 @@ class MainWindow(QMainWindow):
     def _refresh_preview(self):
         self._dimensions = self.preview.load_path(self.forms['hide']['cover'].edit.text().strip())
         try:
-            payload = Path(self.forms['hide']['input'].edit.text().strip())
-            self._payload_bytes = payload.stat().st_size if payload.is_file() else None
+            paths = self.forms['hide']['input'].paths()
+            self._payload_bytes = sum(Path(path).stat().st_size for path in paths) if paths else None
         except OSError:
             self._payload_bytes = None
         self._render_preview()
@@ -1012,6 +1025,8 @@ class MainWindow(QMainWindow):
             auto_resize=form['resize'].isChecked() if page_key == 'hide' else False,
             max_fill=form['fill'].value() / 100 if page_key == 'hide' else 0.9,
             force=form['force'].isChecked() if 'force' in form and not readonly else False,
+            input_paths=form['input'].paths() if operation in ('hide', 'encrypt', 'preflight') else (),
+            detect_bundle=operation in ('extract', 'decrypt'),
             **(form['budget'].limits() if recovery else {}),
         )
         self._started_at = time.monotonic()
@@ -1022,9 +1037,9 @@ class MainWindow(QMainWindow):
         self._stage = 'wait'
         self._stage_completed = self._stage_total = None
         self._cancel_requested = False
+        self._release_result()
         self.busy = True
         self._set_feedback('working')
-        self.last_result = None
         self.result_card.hide()
         for key in self.forms:
             self.pages[key].setEnabled(False)
@@ -1063,7 +1078,9 @@ class MainWindow(QMainWindow):
         if self._active_page is not None and result.operation in {'hide', 'encrypt', 'extract', 'decrypt', 'verify', 'inspect'}:
             self._successful_credential_page = self._active_page
         if self._active_page is not None and self._input_versions.get(self._active_page, 0) != self._active_input_version:
-            self.last_result = None
+            if result.bundle is not None:
+                self._retired_sessions.append(result.bundle)
+            self._release_result()
             self._set_feedback('input_unverified' if result.operation in ('verify', 'inspect', 'extract', 'decrypt') else 'input_changed_ready')
             return
         self.last_result = result
@@ -1124,6 +1141,10 @@ class MainWindow(QMainWindow):
         self.progress.set_running(False)
         self.progress.hide()
         self.cancel_button.hide()
+        self.bundle_panel.setEnabled(True)
+        for session in self._retired_sessions:
+            session.close()
+        self._retired_sessions.clear()
         for key, form in self.forms.items():
             self.pages[key].setEnabled(True)
             if 'budget' in form:
@@ -1144,6 +1165,7 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(0, self.close)
             return
         if self.last_result:
+            self._render_result()
             QTimer.singleShot(0, lambda: self.scroll.ensureWidgetVisible(self.result_card, 0, 18))
 
     def _build_result(self):
@@ -1156,6 +1178,7 @@ class MainWindow(QMainWindow):
         self.result_summary = WrapTextLabel()
         self.result_summary.setObjectName('result_summary')
         self.result_card.body.addWidget(self.result_summary)
+        self._build_bundle_result()
         self.open_folder_button = self._bind(QPushButton(), 'open_folder')
         self.open_folder_button.setObjectName('open_output_folder')
         self.open_folder_button.clicked.connect(self._open_folder)
@@ -1217,17 +1240,198 @@ class MainWindow(QMainWindow):
                     rendered = f'{float(rendered):.2%}'
                 except ValueError:
                     pass
-            if key in ('original_size', 'stored_size', 'capacity', 'input_size', 'ciphertext_bytes', 'estimated_peak_bytes', 'output_bytes'):
+            if key in ('original_size', 'stored_size', 'capacity', 'input_size', 'ciphertext_bytes', 'estimated_peak_bytes', 'output_bytes', 'source_total_bytes', 'bundle_bytes'):
                 try:
                     rendered = self._size(rendered)
                 except ValueError:
                     pass
             lines.append(self.t(key) + '  ·  ' + rendered)
         self.result_text.setText('\n'.join(lines))
+        self._render_bundle_result()
         self.open_folder_button.setVisible(bool(result.output_path))
         self.copy_button.setVisible(bool(result.details.get('payload_sha256') or result.details.get('sha256')))
         self.copy_input_button.setVisible(bool(result.details.get('input_sha256')))
         self.result_card.show()
+
+    def _release_result(self):
+        result = self.last_result
+        self.last_result = None
+        self._bundle_identity = None
+        if result is not None and result.bundle is not None:
+            if self.busy:
+                self._retired_sessions.append(result.bundle)
+            else:
+                result.bundle.close()
+
+    def _build_bundle_result(self):
+        self.bundle_panel = QWidget()
+        body = QVBoxLayout(self.bundle_panel)
+        body.setContentsMargins(0, 4, 0, 0)
+        body.addWidget(self._label('bundle_hint', 'muted'))
+        actions = ResponsiveColumns(breakpoint=560, spacing=8)
+        self.bundle_select_all = self._bind(QPushButton(), 'select_all')
+        self.bundle_select_none = self._bind(QPushButton(), 'select_none')
+        self.bundle_select_all.clicked.connect(lambda: self._select_members(True))
+        self.bundle_select_none.clicked.connect(lambda: self._select_members(False))
+        actions.addWidget(self.bundle_select_all)
+        actions.addWidget(self.bundle_select_none)
+        body.addWidget(actions)
+        member_scroll = QScrollArea()
+        self.bundle_member_scroll = member_scroll
+        member_scroll.setWidgetResizable(True)
+        member_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        member_scroll.setMinimumHeight(90)
+        member_scroll.setMaximumHeight(240)
+        member_host = QWidget()
+        self.bundle_members = QVBoxLayout(member_host)
+        self.bundle_members.setContentsMargins(8, 8, 8, 8)
+        self.bundle_members.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
+        self.bundle_members.setAlignment(Qt.AlignmentFlag.AlignTop)
+        member_scroll.setWidget(member_host)
+        body.addWidget(member_scroll)
+        self.bundle_output = FileField('bundle_directory', save=True)
+        self.bundle_output.directory = True
+        self._bind(self.bundle_output.label, 'output_directory')
+        self._bind(self.bundle_output.browse, 'browse')
+        self._bind(self.bundle_output.edit, 'directory_hint', 'setPlaceholderText')
+        self.bundle_output.edit.setAccessibleName(self.t('output_directory'))
+        self.bundle_output.browse_requested.connect(lambda: self._browse(self.bundle_output, 'output_directory', 'all_filter'))
+        body.addWidget(self.bundle_output)
+        saves = ResponsiveColumns(breakpoint=620, spacing=8)
+        self.bundle_save_selected = self._bind(ActionButton(), 'save_selected_files')
+        self.bundle_save_selected.setProperty('role', 'primary')
+        self.bundle_save_all = self._bind(QPushButton(), 'save_all_files')
+        self.bundle_save_zip = self._bind(QPushButton(), 'save_bundle_zip')
+        self.bundle_save_selected.clicked.connect(lambda: self._start_bundle_save())
+        self.bundle_save_all.clicked.connect(lambda: self._start_bundle_save(all_files=True))
+        self.bundle_save_zip.clicked.connect(lambda: self._start_bundle_save(whole_archive=True))
+        for button in (self.bundle_save_selected, self.bundle_save_all, self.bundle_save_zip):
+            saves.addWidget(button)
+        body.addWidget(saves)
+        clear = self._bind(QPushButton(), 'clear_bundle_result')
+        clear.clicked.connect(self._clear_bundle_result)
+        body.addWidget(clear)
+        self.result_card.body.addWidget(self.bundle_panel)
+        self.bundle_panel.hide()
+
+    def _clear_bundle_result(self):
+        if not self.busy:
+            self._release_result()
+            self.result_card.hide()
+            self._result_page = None
+            self._set_feedback('ready')
+
+    def _select_members(self, checked):
+        for checkbox in self._bundle_checks.values():
+            if checkbox.isEnabled():
+                checkbox.setChecked(checked)
+
+    def _render_bundle_result(self):
+        session = self.last_result.bundle if self.last_result is not None else None
+        self.bundle_panel.setVisible(session is not None)
+        if session is None:
+            return
+        if self._bundle_identity is not session:
+            self._bundle_identity = session
+            self._bundle_selection = {entry.index: True for entry in session.info.entries}
+            page = self._result_page or ('crypt' if self.last_result.operation == 'decrypt' else 'extract')
+            form = self.forms[page]
+            value = form['output'].edit.text().strip()
+            if value and not self._automatic_restore(page):
+                value = str(Path(value).parent)
+            self.bundle_output.edit.setText(value)
+        while self.bundle_members.count():
+            item = self.bundle_members.takeAt(0)
+            if item.widget() is not None:
+                item.widget().hide()
+                item.widget().deleteLater()
+        self._bundle_checks = {}
+        for entry in session.info.entries:
+            row = QWidget()
+            row.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            layout = QVBoxLayout(row)
+            layout.setContentsMargins(0, 0, 0, 6)
+            layout.setSpacing(2)
+            layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
+            checkbox = BundleMemberCheckBox(f'{entry.index:02d}  {entry.name}  ·  {self._size(entry.size)}', entry.name)
+            checkbox.setObjectName(f'bundle_member_{entry.index}')
+            saved = session.saved.get(entry.index)
+            checkbox.setChecked(self._bundle_selection.get(entry.index, True) and saved is None)
+            checkbox.setEnabled(saved is None)
+            checkbox.toggled.connect(lambda checked, index=entry.index: self._bundle_selection.__setitem__(index, checked))
+            layout.addWidget(checkbox)
+            self._bundle_checks[entry.index] = checkbox
+            if saved is not None:
+                label = ElidedPathLabel(self.t('member_saved'), saved.path)
+                layout.addWidget(label)
+            self.bundle_members.addWidget(row)
+            row.show()
+        if session.archive_saved:
+            label = ElidedPathLabel(self.t('bundle_archive_saved'), session.archive_saved)
+            self.bundle_members.addWidget(label)
+            label.show()
+        self._resize_bundle_viewport()
+        pending = len(session.saved) < len(session.info.entries)
+        self.bundle_save_all.setEnabled(pending)
+        self.bundle_save_selected.setEnabled(pending)
+        self.bundle_save_zip.setEnabled(not session.archive_saved)
+
+    def _resize_bundle_viewport(self):
+        # Small bundles should be readable without an inner scrollbar. For many
+        # members, retain the bounded viewport and scroll the uncompressed rows.
+        for index in range(self.bundle_members.count()):
+            row = self.bundle_members.itemAt(index).widget()
+            for child in [row, *row.findChildren(QWidget)]:
+                child.ensurePolished()
+                if child.layout() is not None:
+                    child.layout().invalidate()
+                    child.layout().activate()
+        self.bundle_members.invalidate()
+        self.bundle_members.activate()
+        content_height = self.bundle_members.minimumSize().height()
+        self.bundle_member_scroll.setFixedHeight(min(240, max(
+            90, content_height + 2 * self.bundle_member_scroll.frameWidth())))
+
+    def _start_bundle_save(self, *, all_files=False, whole_archive=False):
+        if self.busy or self.last_result is None or self.last_result.bundle is None:
+            return
+        session = self.last_result.bundle
+        indices = tuple(entry.index for entry in session.info.entries if entry.index not in session.saved
+                        and (all_files or self._bundle_selection.get(entry.index, True)))
+        if not whole_archive and not indices:
+            self._set_feedback('bundle_select_required', 'error')
+            return
+        directory = self.bundle_output.edit.text().strip()
+        if not directory:
+            self._set_feedback('missing_directory', 'error')
+            return
+        from .worker import BundleJobThread
+        self._started_at = time.monotonic()
+        self._active_operation = self.last_result.operation
+        self._active_page = self._result_page
+        self._active_input_version = self._input_versions.get(self._active_page, 0)
+        self._successful_credential_page = None
+        self._stage = 'save'
+        self._stage_completed = self._stage_total = None
+        self._cancel_requested = False
+        self.busy = True
+        self._set_feedback('working')
+        self.bundle_panel.setEnabled(False)
+        for key in self.forms:
+            self.pages[key].setEnabled(False)
+        self.progress.show()
+        self.progress.setRange(0, 0)
+        self.progress.set_running(True)
+        self.cancel_button.setEnabled(True)
+        self.cancel_button.show()
+        self._elapsed_timer.start()
+        self._thread = BundleJobThread(self.last_result, indices, directory, self.language, self,
+                                       whole_archive=whole_archive)
+        self._thread.succeeded.connect(self._succeeded)
+        self._thread.failed.connect(self._failed)
+        self._thread.progress.connect(self._progress_changed)
+        self._thread.finished.connect(self._finished)
+        self._thread.start()
 
     def _open_folder(self):
         if self.last_result and self.last_result.output_path:
@@ -1255,5 +1459,6 @@ class MainWindow(QMainWindow):
         else:
             for page_key in self.forms:
                 self._clear_page_credentials(page_key)
+            self._release_result()
             QApplication.instance().removeTranslator(self._translator)
             event.accept()

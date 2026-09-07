@@ -1,0 +1,51 @@
+{
+  "synthetic_only": true,
+  "payload_name": "MoyleSteg-files.zip",
+  "payload_sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+  "password": "synthetic-bundle-password",
+  "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "envelopes": [
+    {
+      "file": "python-key.png",
+      "mode": "key",
+      "format": "png",
+      "bytes": 34910,
+      "sha256": "5452d6996fab828a72021e948551522f8fd466893c984e9ed153f3ddbf9349aa"
+    },
+    {
+      "file": "python-key.gif",
+      "mode": "key",
+      "format": "gif",
+      "bytes": 4878,
+      "sha256": "fad0b4d292a2b954a4af1422ebd0246bb842c33d17dd61dbb376719ed99335c6"
+    },
+    {
+      "file": "python-key.saes",
+      "mode": "key",
+      "format": "saes",
+      "bytes": 4677,
+      "sha256": "18207cd7d91f8b09a6ccadb0a76d113590199625ac8a3cd84cbcf26ac600829d"
+    },
+    {
+      "file": "python-password.png",
+      "mode": "password",
+      "format": "png",
+      "bytes": 35019,
+      "sha256": "2a9d70456e332e4f8679876636fbdcfb282de47f6023aaaf26704dbe90a1a361"
+    },
+    {
+      "file": "python-password.gif",
+      "mode": "password",
+      "format": "gif",
+      "bytes": 4878,
+      "sha256": "40e2f9ad1634e667fd665f64b63c42c44650a049dc213d7a705f6a31213d91e1"
+    },
+    {
+      "file": "python-password.saes",
+      "mode": "password",
+      "format": "saes",
+      "bytes": 4677,
+      "sha256": "10d4cda95a66518c5a36646700c9d1293cb136e1769cf712ac76c6b403f989b6"
+    }
+  ]
+}

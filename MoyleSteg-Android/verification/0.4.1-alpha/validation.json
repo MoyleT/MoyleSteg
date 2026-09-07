@@ -1,0 +1,234 @@
+{
+  "version": "0.4.1-alpha",
+  "date": "2026-09-07",
+  "synthetic_only": true,
+  "environment": "Windows host; JDK21; Gradle8.13; Robolectric4.16; project/build/cache/temp on H:",
+  "host_unit_tests": {
+    "tests": 196,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "suite": "com.moyle.steg.android.AutoExpandViewModelTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.DocumentStoreDiskBudgetTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.DocumentStoreRegressionTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.DocumentStoreSelectionCancellationTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.DownloadsExporterTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.GifViewModelTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.JpegCarrierTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.JpegInteropTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.JpegViewModelTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.LargeDocumentStoreTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.LargeFileViewModelTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.MemoryPolicyTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.MultiFileViewModelTest",
+      "tests": 22,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.NavigationRetentionTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.RestoredFileActionsTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.RestoreDownloadsViewModelTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.SelectionRegressionTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "lint": {
+    "Warning": 9
+  },
+  "lint_issue_ids": {
+    "NewerVersionAvailable": 3,
+    "UsableSpace": 4,
+    "UseKtx": 2
+  },
+  "original_cryptographic_core_baselines": {
+    "0.3.2-alpha": {
+      "files_identical": 13,
+      "source_archive_sha256": "822004ae86606174aac0697bd7543459d48c399bf28f95fda37c8bd56febf6ef"
+    },
+    "0.4.0-alpha": {
+      "files_identical": 13,
+      "source_archive_sha256": "7913cf03784b3015b9dbf43f2de79a42e992e8da9948882869c06754b16e3d83"
+    }
+  },
+  "changed_core_module": "MultiFileBundle.kt; PNG/GIF/SAES encrypted v1 format unchanged",
+  "core_check": "passed",
+  "private_bundle_disk_regressions_passed": 15,
+  "multi_file_bundle_regressions_passed": 20,
+  "bundle_memory": {
+    "original_bytes": 67108864,
+    "jvm_max_heap_bytes": 33554432
+  },
+  "private_disk_reserve_bytes": 33554432,
+  "disk_test_scope": "Controlled available-space and ENOSPC fault injection on synthetic data; no real-device full-disk test; conservative stage estimates are not reservations.",
+  "cross_platform": {
+    "cases": 12,
+    "member_checks": 60,
+    "reference_fallback_cases": 6,
+    "reference_member_checks": 30,
+    "containers": [
+      {
+        "container": "python-key.png",
+        "sha256": "5452d6996fab828a72021e948551522f8fd466893c984e9ed153f3ddbf9349aa"
+      },
+      {
+        "container": "python-key.gif",
+        "sha256": "fad0b4d292a2b954a4af1422ebd0246bb842c33d17dd61dbb376719ed99335c6"
+      },
+      {
+        "container": "python-key.saes",
+        "sha256": "18207cd7d91f8b09a6ccadb0a76d113590199625ac8a3cd84cbcf26ac600829d"
+      },
+      {
+        "container": "python-password.png",
+        "sha256": "2a9d70456e332e4f8679876636fbdcfb282de47f6023aaaf26704dbe90a1a361"
+      },
+      {
+        "container": "python-password.gif",
+        "sha256": "40e2f9ad1634e667fd665f64b63c42c44650a049dc213d7a705f6a31213d91e1"
+      },
+      {
+        "container": "python-password.saes",
+        "sha256": "10d4cda95a66518c5a36646700c9d1293cb136e1769cf712ac76c6b403f989b6"
+      },
+      {
+        "container": "kotlin-key.png",
+        "sha256": "a39f3b2360a383b7a71d5776b23dedf601905ef5b13214cc1a2929d36bb447e3"
+      },
+      {
+        "container": "kotlin-key.gif",
+        "sha256": "d1018c7ae7c654d8e3c3734f020a41ecebbf9aecc677c6503116613c4aa8009b"
+      },
+      {
+        "container": "kotlin-key.saes",
+        "sha256": "d0bc728b58c7f454bb639dcd817c2a984e5d314373449e503054b3a8cf257dfe"
+      },
+      {
+        "container": "kotlin-password.png",
+        "sha256": "0029b17fc0a9cf4581a04bfb75f5dab8a11e841699b416920fb25ba25bf456fb"
+      },
+      {
+        "container": "kotlin-password.gif",
+        "sha256": "b3a92c8234ef7017dd46843b875a9a802e49f00909b505d41ddc77398478f739"
+      },
+      {
+        "container": "kotlin-password.saes",
+        "sha256": "c4f03cd2a19c847f65f29c88f052c5401f33d089106e98b0cc91a26a876d8891"
+      }
+    ]
+  },
+  "debug_apk": {
+    "file": "MoyleSteg-Android-0.4.1-alpha-debug.apk",
+    "bytes": 15266486,
+    "sha256": "589c4b0e77f30ec99c3748f6d61361ccb58862632a4bf83770faadd617d04361",
+    "version_code": 9,
+    "certificate_sha256": "9f8c5e40be3860dbcf971b2c0c50cfce8ebaea81e60f836c9c458e5cb4a458e0"
+  },
+  "normal_apk_test_assets_absent": true,
+  "same_signer_as_0_4_0": true,
+  "instrumentation_apk": {
+    "state": "built, not executed",
+    "bytes": 1908906,
+    "sha256": "f7a89a1027a3ec930a82f1b76d02b53f5aad94a6bca18b9fea06899462f05214"
+  },
+  "final_gradle_log_sha256": "f6048cba6d15b6c1ec15db9098e26b8b762e377cac5ace5e4f9957bd19620156",
+  "device_run": false,
+  "iqoo13_run": false
+}

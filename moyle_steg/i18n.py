@@ -1,6 +1,28 @@
 """Complete offline UI translations. Values never contain user secrets."""
 
 TEXT = {
+    'selection_summary': ('已选 {count} 个文件 · 原始大小 {size}（最多 100 个）', '{count} files selected · Source size {size} (up to 100)'),
+    'selected_files': ('所选文件列表', 'Selected files'),
+    'remove_selected': ('移除选中', 'Remove selected'),
+    'clear_files': ('清空文件', 'Clear files'),
+    'select_all': ('全选待保存文件', 'Select pending files'),
+    'select_none': ('取消全选', 'Clear selection'),
+    'save_selected_files': ('保存选中文件', 'Save selected files'),
+    'save_all_files': ('保存全部待恢复文件', 'Save all pending files'),
+    'save_bundle_zip': ('另存完整 ZIP', 'Save complete ZIP'),
+    'clear_bundle_result': ('清空恢复结果（已保存文件保留）', 'Clear result (saved files remain)'),
+    'bundle_ready': ('多文件认证通过，请选择要保存的文件。', 'Files authenticated. Choose which files to save.'),
+    'bundle_saved': ('所选文件已保存并回读校验。', 'Selected files saved and verified from disk.'),
+    'bundle_partial': ('本次保存未全部完成。已保存文件保留，可直接重试剩余文件。', 'Saving did not complete. Saved files remain; retry the pending files directly.'),
+    'bundle_hint': ('以下文件来自已认证的多文件包。同名文件自动改名，不覆盖现有文件。取消仅停止剩余保存；清空结果或关闭软件会清理私有恢复副本。', 'These files belong to the authenticated bundle. Existing files are never overwritten. Cancelling stops pending saves. Clearing this result or closing the app removes the private recovery copy.'),
+    'bundle_select_required': ('请选择至少一个尚未保存的文件。', 'Select at least one file that has not been saved.'),
+    'member_saved': ('已保存并校验', 'Saved and verified'),
+    'bundle_archive_saved': ('完整 ZIP 已保存', 'Complete ZIP saved'),
+    'file_count': ('文件数量', 'File count'),
+    'saved_files': ('已保存文件数量', 'Saved files'),
+    'source_total_bytes': ('所选文件原始总大小', 'Total original file size'),
+    'bundle_bytes': ('多文件 ZIP 大小', 'Bundle ZIP size'),
+    'stage_bundle': ('打包并验证文件', 'Packaging and verifying files'),
     'text_size': ('界面字号', 'Text size'),
     'text_standard': ('标准字号', 'Standard text'),
     'text_large': ('大字号', 'Large text'),
@@ -191,12 +213,14 @@ TEXT = {
     'key_filter': ('隐写密钥 (*.stegkey);;所有文件 (*)', 'Steganography keys (*.stegkey);;All files (*)'),
     'encrypted_filter': ('加密文件 (*.saes);;所有文件 (*)', 'Encrypted files (*.saes);;All files (*)'),
     'guide_body': (
+        '<h2>多文件 · 一张图片，多份文件</h2><p>“隐藏文件”和“文件加解密”的加密模式支持多选或拖入多个文件，最多 100 个。单文件保持原流程，两个及以上会自动打包为标准 ZIP，再统一加密。预检按实际打包结果计算容量。恢复多文件包时先认证，再选择保存全部或部分文件；同名文件自动改名。取消或失败时已保存文件保留，剩余文件无需重新输入口令即可重试。也可另存完整 ZIP；普通用户 ZIP 不会自动展开。清空结果、更换输入或关闭软件会清理私有恢复副本，已保存的文件保留。</p>'
         '<h2>01 · 隐藏与恢复</h2><p>在“隐藏文件”中先选择载体图片和秘密文件，点击“检查实际容量”，再设置口令或选用已有密钥，指定 PNG／GIF 输出位置后开始处理。预检会实际压缩文件，计算需求和目标尺寸；PNG 容量不足时可启用受预算限制的自动扩容；GIF 保持原动画尺寸。</p><p>恢复时切换到“提取文件”，选择生成的 PNG／GIF，并提供完全相同的口令或密钥。默认按原文件名和格式恢复：选择保存文件夹，认证成功后即可找回完整原文件。也可先“验证并查看元数据”，或取消自动原名选项来自定义文件名。</p>'
         '<h2>02 · 口令与密钥</h2><p>口令保护使用 scrypt，密钥文件保护使用 HKDF；内容使用 AES-256-GCM 认证加密。遗失口令或密钥后无法恢复。口令只保留在当前窗口，不写入设置。失败、取消和容量预检会保留已输入的口令，方便调整选项后重试；加密、恢复或验证成功后只清除本次使用页的口令，关闭窗口时清除所有页。你也可以随时手动清空口令框。</p><p>“密钥工具”生成 .stegkey 文件。请备份到安全位置，通过独立渠道交付；不要与隐藏图片放在同一公开位置。</p>'
         '<h2>03 · 传输与兼容</h2><p>请使用 PNG／GIF 原文件传输。GIF 密文在标准扩展块中，重编码可能删除它；GIF 需新版两端恢复。选择聊天工具的“原图”或“文件”方式；有损压缩、缩放、裁剪、滤镜和重新保存均可能破坏 RGB-LSB 数据。隐写不会让图片具备抵抗专业检测的保证。</p><p>PNG／SAES 沿用 v1.0 文件格式，可与原命令行工具配合。“文件加解密”可处理独立加密文件及旧版 .saes。</p>'
         '<h2>04 · 完成摘要与验证</h2><p>默认拒绝覆盖现有文件。如确需覆盖，请显式勾选覆盖选项。输出不能是输入、载体或密钥。完成摘要显示任务、输入路径、完成时间、状态和输出位置；有输出时可打开目录。技术详情默认折叠，展开后分别复制原始文件与完整容器 SHA-256。更换对应输入后，旧成功结果失效，新的恢复输入尚未验证。</p><p>“验证文件”自动识别 PNG、GIF 和 SAES，通过系统临时目录中的私有加密容器副本认证，不输出解密文件。认证和两项摘要针对本次捕获的同一份数据：原始文件摘要对应解密内容，完整容器摘要覆盖整个输入（含附加数据），两者不能混用。成功状态仅描述本次捕获的数据；分块读取不是系统原子快照，验证结果不保证之后的源文件保持不变。请保留源文件，恢复并比对后再决定归档。</p>'
         '<h2>05 · 恢复预算与临时空间</h2><p>默认预算分别为 2500 万像素、256 MiB 文件载荷和 512 MiB 完整恢复容器，图片预览另设 1600 万像素上限。超出预算不代表文件损坏，请勿缩放、裁剪或重新保存原隐写 PNG／GIF。恢复页面可展开高级设置；预算只保留在当前窗口，不持久保存。提高默认预算须在每次任务前确认设备资源，修改输入或预算、结束任务后会清除确认。</p><p>资源预览在后台读取文件大小和临时卷可用空间；开始恢复任务时先在后台重新检查并显示结果。验证或查看信息在复制前再次检查，要求容器大小加 16 MiB 安全余量。系统临时副本不会修改原文件，成功、失败或取消后清理。内存需求是估算，磁盘可用空间也可能被其他程序改变；安全余量不是资源保证。</p>'
         '<h2>06 · 字号、进度与取消</h2><p>侧栏可切换“标准／大字号”，大字号增加 2px，三主题和 16px 细进度条保持原有风格。小屏时窗口适配可用工作区，较窄的表单上下排列，侧栏可以滚动。</p><p>进度条显示当前阶段的真实进度，阶段切换时会重新计数；无法细分的计算显示等待状态。“取消操作”会在安全检查点停止。处理时关闭窗口会先请求取消，线程结束后再关闭；已经提交的结果仍按成功处理。全部计算都在本机执行，无需账户或网络。</p>',
+        '<h2>Multiple files · One image</h2><p>Hide and Encrypt accept up to 100 selected or dropped files. One file retains the existing flow; two or more are packaged as a standard ZIP before shared encryption. Preflight uses the actual archive. Recovery authenticates first, then lets you save all or selected files with unique names. Cancelling or failing preserves committed files; retry pending files without re-entering credentials. Save complete ZIP is also available. Ordinary user ZIPs are never automatically unpacked. Clearing the result, changing input or closing the app removes the private recovery copy while keeping saved files.</p>'
         '<h2>01 · Hide and recover</h2><p>In Hide a file, choose a cover and secret, check actual capacity, then enter a password or select an existing key and choose a PNG/GIF destination. Preflight compresses the file to measure requirements and target dimensions. PNG resizing remains subject to resource limits; GIF retains its original animation dimensions.</p><p>To recover, open Extract a file and select the generated PNG/GIF. Use exactly the same password or key. Choose a save folder to restore the original filename and format after verification. Verify and inspect metadata shows the original name and checksum. Uncheck automatic restoration to choose a custom filename.</p>'
         '<h2>02 · Passwords and keys</h2><p>Password protection uses scrypt; key-file protection uses HKDF. Content is authenticated with AES-256-GCM. Lost credentials cannot be recovered. Passwords stay only in the current window and are never saved to settings. Failed or cancelled jobs and capacity checks retain entered passwords so you can adjust options and retry. Successful encryption, recovery or verification clears only the page used by that job; closing the window clears every page. You can also clear the password fields manually at any time.</p><p>Key tools creates a .stegkey file. Back it up securely and send it through a separate channel. Do not publish it alongside the image.</p>'
         '<h2>03 · Sharing and compatibility</h2><p>Transfer the original PNG/GIF. GIF stores ciphertext in a standard application extension, which re-encoding may remove; upgrade both ends for GIF recovery. In messaging apps, send as an original image or a file. Lossy compression, resizing, cropping, filters, and re-saving may destroy RGB-LSB data. Steganography does not guarantee resistance to professional detection.</p><p>PNG/SAES retain the v1.0 format and work with the original command-line tool. File encryption supports standalone encrypted files and legacy .saes files.</p>'

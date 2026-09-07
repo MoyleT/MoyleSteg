@@ -3,6 +3,10 @@ package com.moyle.steg.android
 import android.app.Application
 import android.content.ContentResolver
 import android.net.Uri
+import android.os.CancellationSignal
+import android.os.OperationCanceledException
+import android.system.ErrnoException
+import android.system.OsConstants
 import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import com.moyle.steg.core.*
@@ -39,18 +43,27 @@ class DocumentStore(
         if(!isDirectory && !mkdirs())throw StegException("无法创建应用私有工作目录。")
     }
     fun availablePrivateBytes(): Long = privateSpace(workDirectory()).coerceAtLeast(0L)
-    fun describe(uri: Uri): PickedDocument {
+    fun describe(uri: Uri,control:Control=Control(),cancellationSignal:CancellationSignal?=null): PickedDocument {
+        checkSelection(control,cancellationSignal)
         var name="document.bin"
-        resolver.query(uri,arrayOf(OpenableColumns.DISPLAY_NAME),null,null,null)?.use { c ->
+        resolver.query(uri,arrayOf(OpenableColumns.DISPLAY_NAME),null,null,null,cancellationSignal)?.use { c ->
+            checkSelection(control,cancellationSignal)
             if(c.moveToFirst()) { val i=c.getColumnIndex(OpenableColumns.DISPLAY_NAME);if(i>=0 && !c.isNull(i))name=c.getString(i).take(1024) }
+            checkSelection(control,cancellationSignal)
         }
+        checkSelection(control,cancellationSignal)
         return PickedDocument(uri,name)
     }
+    private fun checkSelection(control:Control,signal:CancellationSignal?){
+        control.check();signal?.throwIfCanceled()
+    }
     /** Provider metadata supplements content comparison; missing columns are not proof of stability. */
-    private fun metadata(uri: Uri): InputMetadata {
+    private fun metadata(uri: Uri,control:Control,cancellationSignal:CancellationSignal?=null): InputMetadata {
         fun query(columns: Array<String>): InputMetadata? = try {
-            resolver.query(uri,columns,null,null,null)?.use { c ->
-                if(!c.moveToFirst())null else {
+            checkSelection(control,cancellationSignal)
+            resolver.query(uri,columns,null,null,null,cancellationSignal)?.use { c ->
+                checkSelection(control,cancellationSignal)
+                val value=if(!c.moveToFirst())null else {
                     fun number(column: String): Long? {
                         val index=c.getColumnIndex(column)
                         return if(index<0 || c.isNull(index))null else c.getLong(index).takeIf { it>=0 }
@@ -58,33 +71,71 @@ class DocumentStore(
                     InputMetadata(number(OpenableColumns.SIZE),
                         number(DocumentsContract.Document.COLUMN_LAST_MODIFIED)?.takeIf { it>0 })
                 }
+                checkSelection(control,cancellationSignal)
+                value
             }
-        } catch(_: Exception) { null }
+        } catch(error: Exception) {
+            if(error is CancelledException || error is OperationCanceledException || error is java.util.concurrent.CancellationException)throw error
+            checkSelection(control,cancellationSignal)
+            null
+        }
         return query(arrayOf(OpenableColumns.SIZE,DocumentsContract.Document.COLUMN_LAST_MODIFIED))
             ?: query(arrayOf(OpenableColumns.SIZE)) ?: InputMetadata(null,null)
     }
+    /** CancellationSignal cancels a cooperative provider's query/open operation.
+     * Once open, also close our read handle on cancellation; checkpoints remain
+     * necessary because an uncooperative provider/read cannot be forcibly stopped.
+     * The caller owns a dedicated signal for this selection; its local listener
+     * is used only while this stream is open and is removed before returning.
+     */
+    private fun <T> withProbeInput(uri:Uri,control:Control,signal:CancellationSignal?,read:(InputStream)->T):T {
+        checkSelection(control,signal)
+        if(signal==null){
+            return (resolver.openInputStream(uri) ?: throw StegException("无法打开文档，请重新选择。")).use{
+                checkSelection(control,null);read(it)
+            }
+        }
+        val descriptor=resolver.openAssetFileDescriptor(uri,"r",signal)
+            ?: throw StegException("无法打开文档，请重新选择。")
+        return descriptor.use{
+            checkSelection(control,signal)
+            descriptor.createInputStream().use{input->
+                signal.setOnCancelListener{runCatching{input.close()};runCatching{descriptor.close()}}
+                try{checkSelection(control,signal);read(input)}
+                finally{signal.setOnCancelListener(null)}
+            }
+        }
+    }
     /** Fixed headers use 54 bytes; JPEG scans at most 1 MiB, never allocating pixels. */
-    fun probe(doc: PickedDocument,control: Control): DocumentProbe {
-        control.check()
-        val size=metadata(doc.uri).size
+    fun probe(doc: PickedDocument,control: Control,cancellationSignal:CancellationSignal?=null): DocumentProbe {
+        checkSelection(control,cancellationSignal)
+        val size=metadata(doc.uri,control,cancellationSignal).size
+        checkSelection(control,cancellationSignal)
+        val checked=Control(progress={stage,done,total->
+            checkSelection(control,cancellationSignal);control.report(stage,done,total)
+        },cancelled={checkSelection(control,cancellationSignal);false})
         val header=ByteArray(54)
         var count=0
         try {
-            (resolver.openInputStream(doc.uri) ?: throw StegException("无法打开文档，请重新选择。")).use { input ->
+            val result=withProbeInput(doc.uri,control,cancellationSignal) { input ->
                 while(count<header.size) {
-                    control.check()
+                    checkSelection(control,cancellationSignal)
                     val n=input.read(header,count,header.size-count)
+                    checkSelection(control,cancellationSignal)
                     if(n<0)break
                     if(n==0)throw StegException("文档提供方返回了无法继续的读取结果。")
                     count+=n
                 }
                 if(count>=3 && JpegCarrier.isJpeg(header)) {
-                    val info=JpegCarrier.probe(SequenceInputStream(ByteArrayInputStream(header,0,count),input),control)
-                    return DocumentProbe(size,"jpeg",info?.width,info?.height)
-                }
+                    val info=JpegCarrier.probe(SequenceInputStream(ByteArrayInputStream(header,0,count),input),checked)
+                    DocumentProbe(size,"jpeg",info?.width,info?.height)
+                }else probeBytes(header,size,count,checked)
             }
-            control.check()
-            return probeBytes(header,size,count,control)
+            checkSelection(control,cancellationSignal)
+            return result
+        } catch(error:Exception){
+            checkSelection(control,cancellationSignal)
+            throw error
         } finally { header.fill(0) }
     }
     /** Reuse the header parser on the exact captured bytes, without another provider read. */
@@ -125,11 +176,12 @@ class DocumentStore(
     fun captureFile(doc: PickedDocument,limit: Long,control: Control): File {
         control.check()
         if(limit<=0)throw StegException("读取预算无效。")
-        val before=metadata(doc.uri)
+        val before=metadata(doc.uri,control)
         if(before.size!=null && before.size>limit)
             throw StegException("文件超过读取预算；请勿为恢复而缩放隐写图。")
         ensurePrivateSpace(before.size ?: 0L)
-        val captured=File.createTempFile("moyle-",".work",workDirectory())
+        val captured=try{File.createTempFile("moyle-",".work",workDirectory())}
+            catch(error:Exception){throw privateDiskFailure(error)}
         try {
             val first=FileOutputStream(captured).use { output ->
                 val digest=(resolver.openInputStream(doc.uri) ?: throw StegException("无法打开文档，请重新选择。"))
@@ -150,21 +202,38 @@ class DocumentStore(
             if(first!=second)throw StegException("读取期间文件发生变化，请等待保存、同步或下载完成后重试。")
             val saved=captured.inputStream().use { digestStream(it,limit,control,"回读私有文件",first.size) }
             if(saved!=first || captured.length()!=first.size)throw StegException("私有工作文件保存后校验失败。")
-            val after=metadata(doc.uri)
+            val after=metadata(doc.uri,control)
             if((before.size!=null && before.size!=first.size) ||
                 (after.size!=null && after.size!=first.size) ||
                 (before.modified!=null && after.modified!=null && before.modified!=after.modified))
                 throw StegException("读取期间文件发生变化，请等待保存、同步或下载完成后重试。")
             control.check()
             return captured
-        } catch(e: Throwable) { captured.delete();throw e }
+        } catch(e: Throwable) { captured.delete();if(e is Exception)throw privateDiskFailure(e) else throw e }
     }
 
     private fun ensurePrivateSpace(bytesPending: Long) {
+        if(bytesPending<0)throw StegException("私有工作空间预算无效。")
         val reserve=32L*1024*1024
-        val available=availablePrivateBytes()
+        val available=try{availablePrivateBytes()}catch(error:Exception){throw privateDiskFailure(error)}
         // Subtract only after checking the reserve, avoiding size + reserve overflow.
         if(available<reserve || bytesPending>available-reserve)throw StegException("应用私有空间不足。")
+    }
+    private fun privateDiskFailure(error:Exception):Exception {
+        var cause:Throwable?=error
+        repeat(8){
+            val current=cause ?: return error
+            if(current is ErrnoException && current.errno in setOf(OsConstants.ENOSPC,OsConstants.EDQUOT))
+                return StegException("应用私有空间不足。请释放空间后重试。",error)
+            // FileSystemException.message includes paths; a filename such as
+            // ENOSPC-notes.txt must not turn a permission error into disk-full.
+            val reason=if(current is java.nio.file.FileSystemException)current.reason else current.message
+            val message=reason.orEmpty().lowercase(java.util.Locale.ROOT)
+            if(listOf("enospc","edquot","no space left on device","disk quota exceeded").any(message::contains))
+                return StegException("应用私有空间不足。请释放空间后重试。",error)
+            cause=current.cause
+        }
+        return error
     }
 
     /** Keep disk lengths as Long; only Control's existing Int UI boundary is scaled. */
@@ -203,7 +272,7 @@ class DocumentStore(
     }
     fun capture(doc: PickedDocument,limit: Int,control: Control): ByteArray {
         control.check()
-        val before=metadata(doc.uri)
+        val before=metadata(doc.uri,control)
         if(before.size!=null && before.size>limit)
             throw StegException("文件超过读取预算；请勿为恢复而缩放隐写图。")
         val captured=BoundedIo.readStable({
@@ -211,7 +280,7 @@ class DocumentStore(
         },limit,control)
         try {
             control.check()
-            val after=metadata(doc.uri)
+            val after=metadata(doc.uri,control)
             if((before.size!=null && before.size!=captured.size.toLong()) ||
                 (after.size!=null && after.size!=captured.size.toLong()) ||
                 (before.modified!=null && after.modified!=null && before.modified!=after.modified))
@@ -221,19 +290,27 @@ class DocumentStore(
         } catch(e: Throwable) { captured.fill(0);throw e }
     }
     fun stage(data: ByteArray,control: Control): File {
-        val dir=work
-        if(dir.usableSpace < data.size.toLong()+16*1024*1024)throw StegException("应用私有空间不足。")
-        val f=File.createTempFile("moyle-",".work",dir)
+        var owned:File?=null
         try {
+            control.check()
+            ensurePrivateSpace(data.size.toLong())
+            val f=File.createTempFile("moyle-",".work",work).also{owned=it}
             FileOutputStream(f).use { output ->
                 var at=0
-                while(at<data.size){control.check();val n=minOf(65536,data.size-at);output.write(data,at,n);at+=n}
+                control.report("保存私有文件",0,data.size)
+                while(at<data.size){
+                    control.check()
+                    ensurePrivateSpace((data.size-at).toLong())
+                    val n=minOf(65536,data.size-at)
+                    output.write(data,at,n);at+=n
+                    control.report("保存私有文件",at,data.size)
+                }
                 output.fd.sync()
             }
             val (hash,size)=f.inputStream().use{BoundedIo.hash(it,maxOf(1,data.size),control)}
             if(hash!=sha256(data) || size!=data.size)throw StegException("私有工作文件保存后校验失败。")
             return f
-        }catch(e: Exception){f.delete();throw e}
+        }catch(e: Exception){owned?.delete();throw privateDiskFailure(e)}
     }
     fun sameDocument(a: Uri,b: Uri): Boolean {
         if(a==b)return true

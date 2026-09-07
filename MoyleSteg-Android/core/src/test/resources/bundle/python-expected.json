@@ -1,0 +1,37 @@
+{
+  "archive": "python-bundle.zip",
+  "sha256": "d8d275189277d1802b39fe80e7845303b684479f147e295fc2059a9ebefe0dc0",
+  "total_bytes": 4223,
+  "entries": [
+    {
+      "index": 1,
+      "name": "duplicate.txt",
+      "size": 26,
+      "sha256": "bc3e0b9c61c9d30c329496b55cea71b27fee9083ec2057e441cf14767299e013"
+    },
+    {
+      "index": 2,
+      "name": "duplicate.txt",
+      "size": 55,
+      "sha256": "31bb901de253b826bb4dfe44d6be8cdc0bc5a5a67a50cfa97da1669cd640cb4e"
+    },
+    {
+      "index": 3,
+      "name": "草莓与樱桃.txt",
+      "size": 46,
+      "sha256": "8c33bc4cef2623427d3b7cd008f5bd19aae9ee4533e3d4d3f887b032cc66ffa1"
+    },
+    {
+      "index": 4,
+      "name": "empty.bin",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "index": 5,
+      "name": "random.bin",
+      "size": 4096,
+      "sha256": "4fd00bc5b5340415087d23d57f6120dd6d8ece06ba121f5050cd41c0dbe98223"
+    }
+  ]
+}
