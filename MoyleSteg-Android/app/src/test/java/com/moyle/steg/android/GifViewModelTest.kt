@@ -27,6 +27,8 @@ class GifViewModelTest {
     private lateinit var vm: MoyleViewModel
     private lateinit var directory: File
     private lateinit var provider: AutoExpandViewModelTest.SyntheticDocuments
+    private lateinit var downloadsDirectory: File
+    private lateinit var downloadsProvider: DownloadsExporterTest.DownloadsProvider
     private val source = ByteArray(1024).also { Random(718L).nextBytes(it) }
     private val keyFile = Credential.exportKey(ByteArray(32) { it.toByte() })
     private lateinit var cover: ByteArray
@@ -43,6 +45,15 @@ class GifViewModelTest {
             exported = true; grantUriPermissions = true
         })
         ShadowContentResolver.registerProviderInternal("gif.test", provider)
+        downloadsDirectory = File.createTempFile("gif-vm-downloads-", ".test", app.cacheDir)
+        check(downloadsDirectory.delete() && downloadsDirectory.mkdir())
+        downloadsProvider = DownloadsExporterTest.DownloadsProvider(downloadsDirectory)
+        downloadsProvider.attachInfo(app, ProviderInfo().apply {
+            authority = "media"; packageName = app.packageName
+            name = downloadsProvider.javaClass.name; applicationInfo = app.applicationInfo
+            exported = true; grantUriPermissions = true
+        })
+        ShadowContentResolver.registerProviderInternal("media", downloadsProvider)
         cover = javaClass.classLoader!!.getResourceAsStream("gif/cover.gif")!!.use { it.readBytes() }
         File(directory, "cover.gif").writeBytes(cover)
         File(directory, "synthetic.bin").writeBytes(source)
@@ -60,6 +71,7 @@ class GifViewModelTest {
         } finally {
             Dispatchers.resetMain()
             directory.listFiles()?.forEach { check(it.delete()) }; check(directory.delete())
+            downloadsDirectory.listFiles()?.forEach { check(it.delete()) }; check(downloadsDirectory.delete())
         }
     }
 
@@ -104,6 +116,7 @@ class GifViewModelTest {
         val bytes = result.staged!!.readBytes()
         assertTrue(GifCarrier.isGif(bytes))
         assertEquals(sha256(bytes), result.containerHash)
+        assertTrue(downloadsProvider.rows.isEmpty())
         Credential.keyFile(keyFile).use { key ->
             val decoded = StegEngine().decode(bytes, key)
             assertEquals("synthetic.bin", decoded.filename); assertArrayEquals(source, decoded.data)
@@ -119,6 +132,7 @@ class GifViewModelTest {
         val result = vm.state.value.result!!
         assertNull(result.staged); assertEquals(sha256(source), result.contentHash)
         assertEquals(sha256(bytes), result.containerHash)
+        assertTrue(downloadsProvider.rows.isEmpty())
     }
 
     @Test fun gifRestoreKeepsOriginalFilenameAndBytesWithAutoExpandStillEnabled() {
@@ -130,6 +144,12 @@ class GifViewModelTest {
         val result = vm.state.value.result!!
         assertEquals("synthetic.bin", result.suggestedName)
         assertArrayEquals(source, result.staged!!.readBytes())
+        val download = requireNotNull(result.download)
+        assertEquals(download.uri, result.exportedUri)
+        val saved = downloadsProvider.rows.getValue(download.uri)
+        assertEquals(0, saved.pending)
+        assertEquals("synthetic.bin", saved.name)
+        assertArrayEquals(source, saved.file.readBytes())
         assertArrayEquals(bytes, File(directory, "hidden.gif").readBytes())
     }
 }

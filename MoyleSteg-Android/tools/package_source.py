@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse, hashlib, json, zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.3.1-alpha'
+VERSION = '0.3.2-alpha'
 TOP = {'.gitignore','README.md','THIRD_PARTY.md','Build-Android.ps1','build.ps1','build.sh',
        'build.gradle.kts','settings.gradle.kts','gradle.properties','gradlew','gradlew.bat'}
 PREFIXES = ('app/src/', 'core/src/', 'tools/', '.github/', 'gradle/wrapper/')
@@ -13,13 +13,14 @@ EXTRA = {'app/build.gradle.kts', 'core/build.gradle.kts'}
 PUBLIC_DOCS = {
     'AUTO_EXPAND_0_1_2.md', 'DESIGN.md', 'DEVICE_ACCEPTANCE.md', 'GIF_PROTOCOL.md',
     'IMPLEMENTATION_PLAN.md', 'LARGE_FILES_0_3_0.md', 'JPEG_CARRIER_0_3_1.md', 'PROTOCOL.md',
-    'RELIABILITY_0_1_1.md', 'SOURCES.md',
+    'RELIABILITY_0_1_1.md', 'SOURCES.md', 'DOWNLOAD_RESTORE_0_3_2.md',
 }
 PUBLIC_EVIDENCE = {
     'android-build-attempt.log', 'autoexpand_0_1_2_results.json', 'core-compile.log',
     'core-tests-final.log', 'kotlin-to-python-final.json', 'reference.json', 'summary.json',
     'TEST_REPORT.md', 'TEST_REPORT_0_1_1.md', 'TEST_REPORT_0_1_2.md',
-    'TEST_REPORT_0_2_0.md', 'TEST_REPORT_0_3_0.md', 'TEST_REPORT_0_3_1.md',
+    'TEST_REPORT_0_2_0.md', 'TEST_REPORT_0_3_0.md', 'TEST_REPORT_0_3_1.md', 'TEST_REPORT_0_3_2.md',
+    '0.3.2-alpha/validation.json',
     '0.3.1-alpha/validation.json', '0.3.1-alpha/jpeg-python.json',
     *(f'0.3.0-alpha/{name}' for name in (
         'apk-signature.log', 'gradle.log', 'interop.json', 'large-1gib.log', 'validation.json')),

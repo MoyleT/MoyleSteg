@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "project": "MoyleSteg-Android",
-  "version": "0.3.1-alpha",
+  "version": "0.3.2-alpha",
   "kind": "public-source",
-  "file_count": 214,
+  "file_count": 224,
   "scope": "Source, public documentation and synthetic test evidence. This manifest excludes itself and SHA256SUMS.txt; SHA256SUMS.txt also covers this manifest.",
   "files": [
     {
@@ -23,8 +23,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 14978,
-      "sha256": "1d063f207216e23d21bb7910e11ee6c13eaa3bb081e5218f2ffb7831815002a2"
+      "bytes": 18012,
+      "sha256": "3756e86f93e2542e47a659b70167e71a520103767d7699415c396eb8b4fa07e1"
     },
     {
       "path": "THIRD_PARTY.md",
@@ -34,7 +34,7 @@
     {
       "path": "app/build.gradle.kts",
       "bytes": 2483,
-      "sha256": "cd8b06cd32b830fa8392d5a0f343b0a885e6a5ecd9b90163642fdc6f654caaf7"
+      "sha256": "991d7c1c8408163a7aef1d8e01c8908fa66296f54757a225479e2cecd9b451f4"
     },
     {
       "path": "app/src/androidTest/java/com/moyle/steg/android/DeviceInteropTest.kt",
@@ -58,13 +58,23 @@
     },
     {
       "path": "app/src/main/AndroidManifest.xml",
-      "bytes": 975,
-      "sha256": "ca59a28729503e396e42343571e059b7084d8a6d5148cbdb9cc7196d31e7f6f4"
+      "bytes": 1414,
+      "sha256": "33b8b216d1a522f7b04e30b70a3b0fbe80455797df715ba5a4ce3fbdb4d3de3c"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/DocumentStore.kt",
       "bytes": 15642,
       "sha256": "11a69ddd08c635a78714c67ac48aef44e2b55991687e58e4939d42b9371ce2e2"
+    },
+    {
+      "path": "app/src/main/java/com/moyle/steg/android/DownloadFileProvider.kt",
+      "bytes": 559,
+      "sha256": "e403cd7865de6f8c6e22cdf380796a777f15e80318b91da0621d80c9e7838271"
+    },
+    {
+      "path": "app/src/main/java/com/moyle/steg/android/DownloadsExporter.kt",
+      "bytes": 12309,
+      "sha256": "82ea76dcd95bf8b9a246197db5f31171f35a26637736bdd233e05c59b3f33ec9"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/JpegCarrier.kt",
@@ -83,8 +93,8 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleApp.kt",
-      "bytes": 19724,
-      "sha256": "f204bb7d142948bc562715a37d820da9af601b4f6e023be631134d7163f9aadd"
+      "bytes": 23315,
+      "sha256": "4b1a5152cf7c807c1d658101ab9ae9d36315bfb3349c04c3478fd0684556b3fd"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleTheme.kt",
@@ -93,13 +103,18 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleViewModel.kt",
-      "bytes": 23858,
-      "sha256": "8fdcacafec34896a3668b0348ef2a4c33649fb8eff5eaad6b29140a316bdb287"
+      "bytes": 28398,
+      "sha256": "3b63cdd12a6c71970a136c907dbe07390e8260289b02ad39a1886f4abab12e5c"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/ResourcesPanel.kt",
       "bytes": 7303,
       "sha256": "ccdce996df6c56a9b435429ecade6c816ad80efbbee23be971dc4cc51b70f8e9"
+    },
+    {
+      "path": "app/src/main/java/com/moyle/steg/android/RestoredFileActions.kt",
+      "bytes": 8393,
+      "sha256": "541662b4416638b314d470a4c831cfde280f0923bcaba3f6bc7d42ca0200e2ed"
     },
     {
       "path": "app/src/main/res/drawable/ic_moyle.xml",
@@ -117,6 +132,11 @@
       "sha256": "8445f29eac2c8dad920347940ad211135de7e2d5bab31130b65819310a44843d"
     },
     {
+      "path": "app/src/main/res/xml/download_paths.xml",
+      "bytes": 171,
+      "sha256": "9f1f896f2aaffd005bc425d9a853fdce319d77d6295c067f776c9a0bf5926d8f"
+    },
+    {
       "path": "app/src/test/java/com/moyle/steg/android/AutoExpandViewModelTest.kt",
       "bytes": 11751,
       "sha256": "b6b6bba44bb08a21dbc945711f46036b00fa829205088db71685f3789bd21029"
@@ -127,9 +147,14 @@
       "sha256": "24cff78156b0a4c51d094d6fb9ee95f4c355529a436be373bff2b0a6e0e4e916"
     },
     {
+      "path": "app/src/test/java/com/moyle/steg/android/DownloadsExporterTest.kt",
+      "bytes": 19726,
+      "sha256": "084b7a63ef95d7c489a5be4d38a65d63e62badba855dcdab88469afbe5b4b336"
+    },
+    {
       "path": "app/src/test/java/com/moyle/steg/android/GifViewModelTest.kt",
-      "bytes": 6042,
-      "sha256": "efdb6ad50c4eb8b7d0863bda01fa0dcb0b165ed985ef9078c6e7c0809a7c107b"
+      "bytes": 7339,
+      "sha256": "7cc5a450fe442c051cacb9659bdc382a2bda0b199b28976ac0e6d598b8e39261"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/JpegCarrierTest.kt",
@@ -143,8 +168,8 @@
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/JpegViewModelTest.kt",
-      "bytes": 7263,
-      "sha256": "8c7d40e031fc7045e17d7bcf79e56de2e8568c392b0ee67c1b8a56bc5de40425"
+      "bytes": 8484,
+      "sha256": "2b8bf2a6b94c2a6b34b8620948fd1116b23113b006ad9d4e0453f612ebe9b8ae"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/LargeDocumentStoreTest.kt",
@@ -153,13 +178,23 @@
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/LargeFileViewModelTest.kt",
-      "bytes": 6891,
-      "sha256": "77f71e9dabdbaa1f35bda882d3b599239e56ebb4af170feb6a07b0b157607b55"
+      "bytes": 8162,
+      "sha256": "3d83035c217d278a9a17be135a4be41d755003581972e4f1ba25b459e04eed7f"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/MemoryPolicyTest.kt",
       "bytes": 3715,
       "sha256": "d35295d353d04426368932ed42bacf010aa7df1763b619a5f12a8c263f602a7d"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/RestoreDownloadsViewModelTest.kt",
+      "bytes": 10062,
+      "sha256": "06115dbf54e794a6a2c803b8f66a02e78f5841c5d086b43429e57db6b2b0b284"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/RestoredFileActionsTest.kt",
+      "bytes": 9688,
+      "sha256": "e8d3b0862b88b10f56e724b65c7ffdfa954b8026e1c97631f8f57b55a18dc9fa"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/SelectionRegressionTest.kt",
@@ -763,8 +798,13 @@
     },
     {
       "path": "docs/DEVICE_ACCEPTANCE.md",
-      "bytes": 3468,
-      "sha256": "636ad882c5d0b41ea480a720ebb2f969755be6b2a539f46de5a89d1b2353f206"
+      "bytes": 8089,
+      "sha256": "f6c93e4fd0a51205544e1b35d334ebb77d4c4c31c42c32e4b10ec17162b335a2"
+    },
+    {
+      "path": "docs/DOWNLOAD_RESTORE_0_3_2.md",
+      "bytes": 6427,
+      "sha256": "6a070371d67c9b2cad17e4953ef31efa2da0aa8bb06007cfcf2d79e7b165fc12"
     },
     {
       "path": "docs/GIF_PROTOCOL.md",
@@ -848,8 +888,8 @@
     },
     {
       "path": "tools/package_source.py",
-      "bytes": 5127,
-      "sha256": "2e1ba6b2df2ccf8be0478357bb6d46a21b5376d89f22b5783f9ae13d395a439a"
+      "bytes": 5215,
+      "sha256": "12c559402dcace0b54542695335bec1bf6461b9725957a63b8008ea1e3681344"
     },
     {
       "path": "tools/png_vectors.py",
@@ -932,6 +972,11 @@
       "sha256": "553e105a538b21cd3b455d004e6a08652934af789bccf0c1a8f95f7d74550223"
     },
     {
+      "path": "verification/0.3.2-alpha/validation.json",
+      "bytes": 3577,
+      "sha256": "67c64f86e275cda5360c7dfa54ce0f3cd24f0e08d5844eb889187022e940650b"
+    },
+    {
       "path": "verification/TEST_REPORT.md",
       "bytes": 2093,
       "sha256": "aed06e8f8adadc37decffaf43b226256688aedbd01f52696a32df605b5388514"
@@ -960,6 +1005,11 @@
       "path": "verification/TEST_REPORT_0_3_1.md",
       "bytes": 4444,
       "sha256": "63b379467fe311227283b0b863e5556b921d9d7978bb057699a01ae3498cdbf8"
+    },
+    {
+      "path": "verification/TEST_REPORT_0_3_2.md",
+      "bytes": 3989,
+      "sha256": "c472750be9ca62a8ae1ba231cff4bf44e3adcc84cd5dc961139228a811dc4675"
     },
     {
       "path": "verification/android-build-attempt.log",

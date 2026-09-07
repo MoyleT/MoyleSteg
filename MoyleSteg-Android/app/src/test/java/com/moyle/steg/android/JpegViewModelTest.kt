@@ -31,6 +31,8 @@ class JpegViewModelTest {
     private lateinit var vm: MoyleViewModel
     private lateinit var directory: File
     private lateinit var provider: AutoExpandViewModelTest.SyntheticDocuments
+    private lateinit var downloadsDirectory: File
+    private lateinit var downloadsProvider: DownloadsExporterTest.DownloadsProvider
     private val originals = mutableMapOf<String, ByteArray>()
     private val payload = ByteArray(1024).also { java.util.Random(913L).nextBytes(it) }
     private val keyBytes = Credential.exportKey(ByteArray(32) { it.toByte() })
@@ -47,6 +49,15 @@ class JpegViewModelTest {
             exported = true; grantUriPermissions = true
         })
         ShadowContentResolver.registerProviderInternal("jpeg.test", provider)
+        downloadsDirectory = File.createTempFile("jpeg-vm-downloads-", ".test", app.cacheDir)
+        check(downloadsDirectory.delete() && downloadsDirectory.mkdir())
+        downloadsProvider = DownloadsExporterTest.DownloadsProvider(downloadsDirectory)
+        downloadsProvider.attachInfo(app, ProviderInfo().apply {
+            authority = "media"; packageName = app.packageName
+            name = downloadsProvider.javaClass.name; applicationInfo = app.applicationInfo
+            exported = true; grantUriPermissions = true
+        })
+        ShadowContentResolver.registerProviderInternal("media", downloadsProvider)
         write("synthetic.bin", payload)
         write("synthetic.stegkey", keyBytes)
         write("cover.jpg", jpeg(96, 64))
@@ -66,6 +77,7 @@ class JpegViewModelTest {
         } finally {
             Dispatchers.resetMain()
             directory.listFiles()?.forEach { check(it.delete()) }; check(directory.delete())
+            downloadsDirectory.listFiles()?.forEach { check(it.delete()) }; check(downloadsDirectory.delete())
         }
     }
 
@@ -132,7 +144,14 @@ class JpegViewModelTest {
         vm.operation(Operation.RESTORE); vm.pick(DocSlot.INPUT, uri("received.jpg")); settle()
         vm.useKey(true); vm.pick(DocSlot.KEY, uri("synthetic.stegkey")); settle()
         vm.run(); settle(); assertNull(vm.state.value.error)
-        assertArrayEquals(payload, vm.state.value.result!!.staged!!.readBytes())
+        val result = vm.state.value.result!!
+        assertArrayEquals(payload, result.staged!!.readBytes())
+        val download = requireNotNull(result.download)
+        assertEquals(download.uri, result.exportedUri)
+        val saved = downloadsProvider.rows.getValue(download.uri)
+        assertEquals(0, saved.pending)
+        assertEquals("synthetic.bin", saved.name)
+        assertArrayEquals(payload, saved.file.readBytes())
     }
 
     private fun jpeg(w: Int, h: Int): ByteArray {

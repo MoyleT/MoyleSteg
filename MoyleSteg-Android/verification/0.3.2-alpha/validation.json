@@ -1,0 +1,130 @@
+{
+  "version": "0.3.2-alpha",
+  "date": "2026-09-07",
+  "synthetic_only": true,
+  "environment": "Windows host; Android SDK, Gradle cache, temp and project on H:; Robolectric framework simulation",
+  "host_unit_tests": {
+    "tests": 146,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "suites": [
+    {
+      "suite": "com.moyle.steg.android.AutoExpandViewModelTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.DocumentStoreRegressionTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.DownloadsExporterTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.GifViewModelTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.JpegCarrierTest",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.JpegInteropTest",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.JpegViewModelTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.LargeDocumentStoreTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.LargeFileViewModelTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.MemoryPolicyTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.RestoredFileActionsTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.RestoreDownloadsViewModelTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "com.moyle.steg.android.SelectionRegressionTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "core_check": "passed, existing Gradle check tasks re-executed where required",
+  "cryptographic_production_files_identical_to_0_3_1": 13,
+  "one_gib_download": "passed: real 1 GiB sparse synthetic source, bounded copy and independent SHA-256 readback through simulated MediaStore",
+  "provider_boundary": "Robolectric media service is synthetic; legacy FileProvider tests adapt Windows path separators. Not an Android device test.",
+  "lint": {
+    "Warning": 8
+  },
+  "lint_issue_ids": {
+    "NewerVersionAvailable": 3,
+    "UsableSpace": 3,
+    "UseKtx": 2
+  },
+  "debug_apk": {
+    "file": "MoyleSteg-Android-0.3.2-alpha-debug.apk",
+    "bytes": 15200950,
+    "sha256": "2ed5d26252bf1adbcbe6348bd0ff3ba33a46165dc724f0bcffb6e985babc7ee6",
+    "version_code": 7,
+    "certificate_sha256": "9f8c5e40be3860dbcf971b2c0c50cfce8ebaea81e60f836c9c458e5cb4a458e0",
+    "same_signer_as_0_3_1": true
+  },
+  "normal_apk_synthetic_test_assets_absent": true,
+  "instrumentation_apk": "built; not executed on a phone or emulator",
+  "device_run": false,
+  "iqoo13_media_store_and_chooser_run": false,
+  "new_independent_windows_interop_run": false
+}

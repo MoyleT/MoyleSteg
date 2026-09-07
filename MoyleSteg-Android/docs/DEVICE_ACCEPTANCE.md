@@ -1,55 +1,80 @@
-# Android device acceptance — pending, not passed
+# Android 设备验收 · 0.3.2-alpha（待执行）
 
-This checklist describes evidence still needed before a device-validated release.
-It is not a claim that the listed behaviors were tested in this environment.
+**本清单不是通过记录。本版未在 Android 手机或模拟器上完成验收。**
+当前版本为 `0.3.2-alpha`／`versionCode 7`。主机测试、构建、签名和 APK 摘要统一见
+[0.3.2 验证报告](../verification/TEST_REPORT_0_3_2.md)；这些结果不能替代真实设备、系统文件管理器、权限弹窗或查看应用的测试。
+恢复保存行为见 [Download 恢复说明](DOWNLOAD_RESTORE_0_3_2.md)。
 
-The exact Gradle/Kotlin/BC/AndroidX debug build and host regressions passed for
-0.2.0-alpha. The current run passed 31 Robolectric tests (4 GIF flow tests),
-72 base / 26 capture / 24 expansion / 43 GIF core regressions, five independent
-PNG memory scenarios, and three fingerprint vectors. Both debug APKs were built;
-neither was installed on an Android device or emulator during this run.
-See [the current report](../verification/TEST_REPORT_0_2_0.md).
+## 历史证据
 
-GIF cross-platform checks passed for both credentials in both directions. The
-fresh Kotlin GIF outputs also preserve original animation blocks and Pillow-decoded
-frame RGBA, delay, disposal and loop values. These checks can be repeated after
-`:core:check` with:
+以下只属于相应历史版本，不表示本版已完成同样验证：
+
+| 版本 | 已记录的主机基线 | 设备边界 |
+|---|---|---|
+| [0.3.1-alpha](../verification/TEST_REPORT_0_3_1.md) | 100 项 app 主机测试、JPEG 双向互通和构建等，具体范围见原报告 | 没有手机或模拟器验收，未操作 iQOO 13 |
+| [0.3.0-alpha](../verification/TEST_REPORT_0_3_0.md) | 流式 SAES、大文件及内存策略，受限 JVM 实验见原报告 | 主机的大文件结果不能当作设备性能结果 |
+| [0.2.0-alpha](../verification/TEST_REPORT_0_2_0.md) | 31 项 Robolectric；72 项基础、26 项捕获、24 项扩容、43 项 GIF 核心回归；5 个 PNG 内存场景和 3 个指纹向量 | 当时构建的主 APK、测试 APK 均未安装到手机或模拟器 |
+
+历史 GIF 跨端检查覆盖两类凭据的两个方向，并检查动画原始块及 Pillow 解码的逐帧 RGBA、延时、处置方式和循环次数。
+它是主机文件／解码检查，不是 Android 动画播放或 SAF 验收。可在 `:core:check` 后重跑：
 
 ```powershell
 py -3 .\tools\verify_gif_python.py .\core\build\gif-output
 ```
 
-This uses the bundled desktop 1.5.0 reference and requires Pillow and cryptography.
-It is a host file/decoder check, not an Android playback or SAF test.
+此工具使用包内桌面 1.5.0 参考实现，需要 Pillow 和 cryptography。
 
-The following device checks remain:
+## 当前设备矩阵与记录要求
 
-- Run DeviceInteropTest on at least API26 and a current device; exercise actual
-  Android AES-GCM provider and scrypt, not only desktop JCA.
-- Run UiSmokeTest; test phone widths 320/360/412dp, landscape, font scales1.0/1.5/2.0,
-  keyboard visibility, TalkBack labels and touch targets. No screenshot yet rendered.
-- Verify stock documents provider, removable USB storage, and a trusted cloud provider.
-  Sizes may be unknown; output may be readable later or may fail. Never report such
-  failure as successful verified export. Test two equal filenames in different URIs.
-- Exercise empty/new/existing destinations, URI aliases, revoked grants, low storage,
-  read failures, partial writes, readback mismatch and delete-not-supported failures.
-- Interrupt during KDF, compression, pixel IO, save and export. Kill/relaunch process,
-  rotate activity, lock device. Verify no false result, no retained shared plaintext
-  on failed verification, and documented handling of provider-created partial files.
-- Verify real PNGs across supported filters/color types, malformed files and budget
-  edges. Unsupported formats must not fall back to lossy Bitmap extraction.
-- Measure peak memory/time on representative midrange hardware before changing limits.
-- Check the default auto-expansion switch, planned dimensions and enough-capacity path.
-  Hide into a tiny synthetic carrier, restore on desktop, then disable expansion and
-  confirm a capacity refusal. Cancel while resizing; confirm original inputs remain unchanged.
-- Test animated GIF import, image/gif SAF export, frame/loop preservation, and
-  cross-platform restoration with desktop 1.5.0 using both password and key files.
-  Confirm GIF capacity uses output bytes, automatic PNG expansion never resizes GIF,
-  and malformed or oversized animations produce clear refusals. Check playback using
-  a real Android viewer after export; no Android playback was exercised in this run.
-- Re-run a dependency/security review before signing a release. Do not publish the
-  public fixture key, or generated debug signing key, as a user's key or release key.
+至少覆盖 API 26／28 的传统存储路径、API 29 的首个 MediaStore Downloads 路径，以及一个当前版本 Android 设备。
+记录型号、系统/API、应用版本和 APK SHA-256、授权状态、查看应用、文件提供方、合成夹具标识、步骤和实际结果。
+iQOO 13 若纳入目标，应单独记录实测，不能从 Robolectric、桌面 JVM 或其他手机的结果推断。
+所有项默认待执行；只在有对应设备证据后勾选。
 
-No biometric vault, background-resume contract, queue or multi-file
-container is implemented. These are out of scope, not hidden stubs.
+## 恢复、保存与打开
 
+- [ ] 分别使用口令和密钥恢复 PNG、GIF、SAES；认证成功后默认保存到公共 `Download/` 根目录，不要求先选择文件夹。
+      错误凭据、篡改、截断和认证前取消不产生可打开的成功结果，也不提前创建公共恢复文件。
+- [ ] 在 Download 中预先放入同名文件，重复恢复两次；已有文件字节不变，每次创建新输出。
+      结果卡主文件名、路径及实际磁盘名称一致，认证原文件名仍可在详情核对；覆盖中文、Emoji、长名称和多点扩展名。
+- [ ] API 29+ 不出现存储权限请求；写入与回读校验期间条目为 pending，完成后才发布。
+      从实际文件管理器检查可见性，核对成品长度和 SHA-256；在写入、回读和发布失败时不得显示保存成功。
+- [ ] API 26–28 覆盖首次授权、拒绝、再次授权和设置中撤销权限；拒绝后保留当前认证成品，可重试或使用 SAF 保存。
+      检查并发同名创建不会覆盖旧文件。旧系统可能看见部分文件是已知限制，但校验结束前不能报告保存成功。
+- [ ] 注入或实际触发低磁盘空间、读取失败、部分写入、回读摘要不符、发布失败和无法删除输出。
+      只清理本次输出；清理失败提示包含可操作的检查建议，不伪报文件已彻底删除。
+- [ ] 在已认证后的写入、回读阶段安全取消，确认显示“已恢复，尚未保存”；保留私有成品。
+      点击重试不重新解密或再次索取口令，成品摘要不变；允许改用“选择其他位置保存”。提交成功后的迟到取消不撤回成品。
+- [ ] 保存完成时没有自动弹出 chooser 或启动查看应用；只有点击“打开文件”才弹系统打开方式选择。
+      在真实查看器中检查 PNG、JPEG、GIF、PDF、TXT／CSV、ZIP、MP4 以及 DOCX／XLSX／PPTX，不把 Office 文档当作普通 ZIP。
+- [ ] 使用受控查看器核对 `ACTION_VIEW`、单个 `content` URI、ClipData 和临时读授权，不能仅凭该授权写入文件。
+      API 26–28 的 FileProvider 也应拒绝写模式；没有文件路径 URI、目录范围授权或包枚举需求。
+- [ ] 覆盖未知二进制、无可用查看应用、用户取消 chooser、查看应用读取失败和权限拒绝。
+      未知 MIME 的保存元数据仍为 `application/octet-stream`，打开时可用通配类型选择应用；文件保持已保存状态，可在文件管理器找到或另存。
+      chooser 启动不能当作文件已被成功查看。HTML／APK 使用相应类型，应用不自动执行文件或安装软件。
+- [ ] SAF“选择其他位置保存”及“另存一份”成功后仍可打开；提示和路径指向实际保存位置，不误称每个副本都在 Download。
+      取消 SAF 选择器不丢失当前私有认证成品，已经公开的副本不受影响。
+- [ ] 清空结果后只清理私有成品和界面状态；Download 和 SAF 的已保存副本仍存在且摘要不变。
+      用合成文件测试进程终止、重启和卸载：不保证恢复待重试任务，公共文件不会由应用删除；检查并记录中断留下的 pending／部分文件。
+
+## 原有功能、系统差异与性能
+
+- [ ] 在 API 26 和当前系统运行设备协议测试（包括 DeviceInteropTest），验证实际 Android AES-GCM provider 和 scrypt。
+- [ ] 运行 UiSmokeTest，检查 320／360／412 dp、横屏、1.0／1.5／2.0 字体比例、键盘、TalkBack 标签和触控尺寸；
+      实际查看三主题、保存进度、恢复结果卡、授权失败提示及屏幕保护。当前没有本版实际渲染验收截图。
+- [ ] 验证系统文档提供方、USB 存储和可信云提供方；输入仍走 SAF，隐藏成品、独立 SAES 加密和密钥导出也仍走 SAF。
+      覆盖未知大小、延迟可读、空／新／非空目标、URI 别名、两个名称相同但 URI 不同的文档、授权撤销和不支持删除的提供方。
+- [ ] 在 KDF、压缩、像素处理、私有保存和导出阶段中断；旋转、锁屏、进程终止及重启后不显示错误的成功状态。
+      按保存阶段区分私有成品、公开成品和提供方创建的空／部分文件，不承诺进程终止后后台续跑或绝对无残留。
+- [ ] 用实际 PNG 检查支持的过滤器、颜色类型、透明度、畸形文件及预算边界；恢复不回退到有损 Bitmap 提取。
+- [ ] 用普通、渐进式和灰度 JPEG、八种 EXIF 方向检查主图、容量预算及 PNG 输出；成品不复制 EXIF／GPS。
+      实际照片隐藏结果在桌面恢复；不把主机 native graphics 通过当作设备解码或传输验收。
+- [ ] 验证默认开启的自动扩容、计划尺寸和容量足够时保持原尺寸；小载体隐藏后在桌面恢复。
+      关闭扩容应得到容量拒绝；扩容中取消不修改原输入。
+- [ ] 验证动画 GIF 的导入、image/gif 导出、帧／循环保留，以及桌面 1.5.0 的双凭据恢复。
+      GIF 容量按输出字节计算，PNG 扩容不缩放 GIF；使用实际 Android 查看器检查播放，畸形或超限动画应明确拒绝。
+- [ ] 在代表性手机上测量峰值内存、磁盘占用和耗时。为有足够空间的设备逐步测试大 SAES 恢复与 Download 回读，
+      再决定是否运行 1 GiB 场景；分别记录认证与复制校验耗时，不把已有主机 1 GiB 实验当作手机完成记录。
+- [ ] 签署正式发布包前重新审查依赖、安全边界和签名配置。公开合成夹具密钥不能充当用户密钥，debug 签名不能充当正式发布签名。
+
+未实现生物识别保险库、后台恢复保证、任务队列或多文件容器；它们不属于本版验收承诺。

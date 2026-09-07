@@ -1,5 +1,6 @@
 package com.moyle.steg.android
 
+import android.Manifest
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
@@ -30,6 +32,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun MoyleApp(vm: MoyleViewModel) {
     val s by vm.state.collectAsStateWithLifecycle()
+    val context=LocalContext.current
+    var permissionToken by rememberSaveable { mutableStateOf<Long?>(null) }
+    val storagePermission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->
+        permissionToken?.let{vm.onDownloadPermissionResult(it,granted)}
+        permissionToken=null
+    }
+    LaunchedEffect(s.downloadPermissionRequest){
+        s.downloadPermissionRequest?.let{token->
+            permissionToken=token
+            vm.consumeDownloadPermissionRequest(token)
+            storagePermission.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+    }
     var slot by rememberSaveable { mutableStateOf(DocSlot.INPUT.name) }
     val picker=rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if(uri!=null)vm.pick(DocSlot.valueOf(slot),uri)
@@ -62,7 +77,7 @@ fun MoyleApp(vm: MoyleViewModel) {
                     item {
                         Text(when(s.page){0->"把秘密藏进\n一张图片";1->"找回属于你的文件";2->"密钥与文件工具";else->"你的工坊"},style=MaterialTheme.typography.headlineLarge)
                         Spacer(Modifier.height(6.dp))
-                        Text("0.3.1-alpha · 重要文件请保留独立备份。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
+                        Text("0.3.2-alpha · 重要文件请保留独立备份。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                     }
                     if(s.page==3){
                         item{Section("外观"){
@@ -81,8 +96,9 @@ fun MoyleApp(vm: MoyleViewModel) {
                             Text("不要通过截图、裁剪、缩放或转换格式来修复隐写图。隐写并不保证不可检测。",style=MaterialTheme.typography.bodySmall)
                         }}
                         item{Section("隐私与退出"){
-                            Text("应用不申请联网或全盘访问权限。文件由系统选择器授权。云盘提供方可能自行下载或上传你主动选择的文档。")
-                            Text("口令不保存到设置；离开应用时清空表单口令。未导出成品暂存在应用私有目录，清空结果或下次进程启动时删除；不承诺物理安全擦除。",style=MaterialTheme.typography.bodySmall)
+                            Text("应用不申请联网或全盘访问权限。恢复文件默认存入 Download：Android 10 及以上无需存储授权，Android 8／9 会申请保存权限。输入仍由系统选择器授权。")
+                            Text("Download 中是已解密的文件，清空结果或卸载应用不会由本应用删除它们。点击“打开文件”后，所选应用会获得该文件的临时读取权限。云盘或查看应用可能自行联网处理文件。",style=MaterialTheme.typography.bodySmall)
+                            Text("口令不保存到设置；离开应用时清空表单口令。私有临时成品在清空结果或下次进程启动时删除；保存失败可在当前结果直接重试。不承诺物理安全擦除。",style=MaterialTheme.typography.bodySmall)
                             Text("首版没有后台持续运行保证。请尽量保持前台，并单独备份密钥。",style=MaterialTheme.typography.bodySmall)
                         }}
                     }else{
@@ -132,10 +148,14 @@ fun MoyleApp(vm: MoyleViewModel) {
                             }}
                             item{
                                 Button(onClick={vm.run()},enabled=!s.busy && !s.selecting,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){
-                                    Text(when(s.operation){Operation.HIDE->"加密并隐藏文件";Operation.ENCRYPT->"加密为 SAES";Operation.VERIFY->"验证，不导出明文";else->"认证并恢复"})
+                                    Text(when(s.operation){Operation.HIDE->"加密并隐藏文件";Operation.ENCRYPT->"加密为 SAES";Operation.VERIFY->"验证，不导出明文";else->"恢复到下载文件夹"})
                                 }
                                 Spacer(Modifier.height(8.dp))
-                                Text("处理通过后，再由你选择保存位置。不会自动覆盖原文件。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
+                                Text(when(s.operation){
+                                    Operation.RESTORE->"认证成功后自动保存到 Download，同名文件另取名称。完成后可直接选择应用打开。"
+                                    Operation.VERIFY->"仅验证本次读取的数据，不会向下载文件夹写出恢复文件。"
+                                    else->"处理通过后，再由你选择保存位置。不会自动覆盖原文件。"
+                                },style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                             }
                         }
                     }
@@ -154,19 +174,40 @@ fun MoyleApp(vm: MoyleViewModel) {
                     s.error?.let{error->item{Surface(shape=RoundedCornerShape(16.dp),color=c.errorContainer){Text(error,Modifier.padding(16.dp),color=c.onErrorContainer)}}}
                     s.result?.let{r->item{
                         Section(r.title){
-                            Text(r.filename,style=MaterialTheme.typography.titleMedium)
+                            Text(r.download?.displayName ?: r.filename,style=MaterialTheme.typography.titleMedium)
                             Text(r.message,style=MaterialTheme.typography.bodyMedium)
                             Text("输入：${r.inputLabel}\n完成于：${r.at}",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
-                            if(r.exportedUri!=null)Text("已保存至：${r.exportedUri}",style=MaterialTheme.typography.bodySmall)
-                            if(r.staged!=null)Button(onClick={when(r.mime){"image/png"->savePng.launch(r.suggestedName);"image/gif"->saveGif.launch(r.suggestedName);else->saveBinary.launch(r.suggestedName)}},enabled=!s.busy && !s.selecting,modifier=Modifier.fillMaxWidth().heightIn(min=50.dp)){Text(if(r.exportedUri==null)"选择位置并保存"else "另存一份")}
+                            if(r.download!=null)Text("已保存至：${r.download.displayPath}",style=MaterialTheme.typography.bodySmall)
+                            else if(r.exportedUri!=null)Text("已保存至所选位置",style=MaterialTheme.typography.bodySmall)
+                            if(r.restored && r.exportedUri!=null){
+                                Button(onClick={
+                                    val outcome=RestoredFileActions.open(context,r.exportedUri,r.mime)
+                                    if(outcome is OpenOutcome.Unavailable)vm.reportOpenFailure(outcome.message)
+                                },enabled=!s.busy,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){Text("打开文件")}
+                                Text("选择一个应用查看；如果系统提示没有可用应用，可安装支持此格式的应用后再打开，文件已经保存。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
+                            }else if(r.restored && r.staged!=null){
+                                Button(onClick=vm::saveRestoredToDownloads,enabled=!s.busy,modifier=Modifier.fillMaxWidth().heightIn(min=54.dp)){
+                                    Text(if(r.needsStoragePermission)"授权并保存到下载文件夹" else "重试保存到下载文件夹")
+                                }
+                            }
+                            if(r.staged!=null){
+                                val saveCopy={when(r.mime){"image/png"->savePng.launch(r.suggestedName);"image/gif"->saveGif.launch(r.suggestedName);else->saveBinary.launch(r.suggestedName)}}
+                                if(r.restored)OutlinedButton(onClick=saveCopy,enabled=!s.busy && !s.selecting,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){
+                                    Text(if(r.exportedUri==null)"选择其他位置保存" else "另存一份")
+                                }else Button(onClick=saveCopy,enabled=!s.busy && !s.selecting,modifier=Modifier.fillMaxWidth().heightIn(min=50.dp)){
+                                    Text(if(r.exportedUri==null)"选择位置并保存"else "另存一份")
+                                }
+                            }
                             var detail by remember(r.at){mutableStateOf(false)}
                             TextButton(onClick={detail=!detail}){Text(if(detail)"收起技术信息"else "展开摘要与技术信息")}
                             if(detail)SelectionContainer{Column(verticalArrangement=Arrangement.spacedBy(10.dp)){
+                                if(r.restored)Text("认证的原文件名：${r.filename}",style=MaterialTheme.typography.bodySmall)
                                 if(r.contentHash.isNotEmpty())HashText("原文件 SHA-256",r.contentHash)
                                 if(r.containerHash.isNotEmpty())HashText("完整容器／密钥文件 SHA-256",r.containerHash)
+                                if(r.exportedUri!=null)Text("保存文件 URI：${r.exportedUri}",style=MaterialTheme.typography.bodySmall)
                                 Text("AES-256-GCM · 格式 v1 · 对应本次捕获数据",style=MaterialTheme.typography.bodySmall)
                             }}
-                            TextButton(onClick=vm::clearResult,enabled=!s.busy){Text("清空结果与私有成品")}
+                            TextButton(onClick=vm::clearResult,enabled=!s.busy){Text(if(r.restored && r.exportedUri!=null)"清空结果（已保存文件保留）" else "清空结果与私有成品")}
                         }
                     }}
                     item{Spacer(Modifier.height(8.dp));Text("让私密文件，隐于像素之间。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)}

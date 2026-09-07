@@ -25,6 +25,8 @@ class LargeFileViewModelTest {
     private lateinit var vm:MoyleViewModel
     private lateinit var directory:File
     private lateinit var provider:AutoExpandViewModelTest.SyntheticDocuments
+    private lateinit var downloadsDirectory:File
+    private lateinit var downloadsProvider:DownloadsExporterTest.DownloadsProvider
     private var snapshot=MemorySnapshot(256L shl 20,32L shl 20,8L shl 30)
     @Before fun setup(){
         Dispatchers.setMain(dispatcher)
@@ -34,14 +36,26 @@ class LargeFileViewModelTest {
         provider=AutoExpandViewModelTest.SyntheticDocuments(directory)
         provider.attachInfo(app,ProviderInfo().apply{authority="largevm.test";packageName=app.packageName;name=provider.javaClass.name;applicationInfo=app.applicationInfo;exported=true})
         ShadowContentResolver.registerProviderInternal("largevm.test",provider)
+        downloadsDirectory=File.createTempFile("large-vm-downloads-",".test",app.cacheDir)
+        check(downloadsDirectory.delete() && downloadsDirectory.mkdir())
+        downloadsProvider=DownloadsExporterTest.DownloadsProvider(downloadsDirectory)
+        downloadsProvider.attachInfo(app,ProviderInfo().apply{
+            authority="media";packageName=app.packageName;name=downloadsProvider.javaClass.name
+            applicationInfo=app.applicationInfo;exported=true;grantUriPermissions=true
+        })
+        ShadowContentResolver.registerProviderInternal("media",downloadsProvider)
         File(directory,"synthetic.stegkey").writeBytes(Credential.exportKey(ByteArray(32){it.toByte()}))
         vm=MoyleViewModel(app){snapshot}
     }
     @After fun cleanup(){
-        vm.viewModelScope.cancel();dispatcher.scheduler.runCurrent();vm.clearResult()
-        assertEquals(0,provider.writeRequests)
-        directory.listFiles().orEmpty().forEach{assertTrue(it.delete())};assertTrue(directory.delete())
-        Dispatchers.resetMain()
+        try{
+            vm.viewModelScope.cancel();dispatcher.scheduler.runCurrent();vm.clearResult()
+            assertEquals(0,provider.writeRequests)
+        }finally{
+            Dispatchers.resetMain()
+            directory.listFiles().orEmpty().forEach{assertTrue(it.delete())};assertTrue(directory.delete())
+            downloadsDirectory.listFiles().orEmpty().forEach{assertTrue(it.delete())};assertTrue(downloadsDirectory.delete())
+        }
     }
     private fun uri(name:String)=Uri.parse("content://largevm.test/$name")
     private fun settle(){
@@ -66,11 +80,18 @@ class LargeFileViewModelTest {
         val restored=runResult()
         assertEquals("source.bin",restored.suggestedName)
         assertArrayEquals(bytes,restored.staged!!.readBytes())
+        val download=requireNotNull(restored.download)
+        assertEquals(download.uri,restored.exportedUri)
+        val saved=downloadsProvider.rows.getValue(download.uri)
+        assertEquals(0,saved.pending)
+        assertEquals("source.bin",saved.name)
+        assertArrayEquals(bytes,saved.file.readBytes())
         vm.operation(Operation.VERIFY)
         val verified=runResult()
         assertNull(verified.staged)
         assertEquals(sha256(bytes),verified.contentHash)
         assertEquals(sha256(container.readBytes()),verified.containerHash)
+        assertEquals(1,downloadsProvider.rows.size)
         assertArrayEquals(bytes,source.readBytes())
     }
     @Test fun probeReadsRealPngDimensionsDespiteJpgSuffix(){

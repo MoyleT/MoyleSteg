@@ -22,7 +22,9 @@ data class JobResult(
     val contentHash: String="",val containerHash: String="",val at: String=now(),
     val staged: File?=null,val suggestedName: String="result.bin",val mime: String="application/octet-stream",
     val protectedUris: List<Uri> = emptyList(),val outputHash: String="",val exportedUri: Uri?=null,
-    val preflight: Preflight?=null
+    val preflight: Preflight?=null,
+    val restored: Boolean=false,val download: SavedDownload?=null,
+    val downloadIssue: String?=null,val needsStoragePermission: Boolean=false
 )
 fun now(): String = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 data class UiState(
@@ -34,10 +36,12 @@ data class UiState(
     val memorySnapshot:MemorySnapshot?=null,val memoryPlan:MemoryPlan?=null,val resourceError:String?=null,
     val inputProbe:DocumentProbe?=null,val coverProbe:DocumentProbe?=null,
     val busy: Boolean=false,val selecting: Boolean=false,val stage: String="",val completed: Int=0,val total: Int=0,
-    val error: String?=null,val result: JobResult?=null
+    val error: String?=null,val result: JobResult?=null,
+    val downloadPermissionRequest: Long?=null
 )
 
 class MoyleViewModel @JvmOverloads constructor(application: Application,
+    private val downloads: DownloadWriter=DownloadsExporter(application),
     private val memoryReader:()->MemorySnapshot={DeviceResources.snapshot(application)}): AndroidViewModel(application) {
     private val docs=DocumentStore(application)
     private val prefs=application.getSharedPreferences("appearance",0)
@@ -45,6 +49,8 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
     val state: StateFlow<UiState> = _state.asStateFlow()
     private val cancel=AtomicBoolean(false)
     private var job: Job?=null
+    private var permissionSequence=0L
+    private var permissionPending: Pair<Long,JobResult>?=null
     init { refreshResources() }
     fun refreshResources(){
         if(_state.value.busy)return
@@ -81,7 +87,11 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
     fun theme(value: String){prefs.edit().putString("theme",value).apply();_state.update{it.copy(theme=value)}}
     fun largeText(value: Boolean){prefs.edit().putBoolean("large",value).apply();_state.update{it.copy(largeText=value)}}
     fun clearPasswords(){_state.update{it.copy(password="",confirmation="")}}
-    fun clearResult(){if(!_state.value.busy){_state.value.result?.staged?.delete();_state.update{it.copy(result=null,error=null)}}}
+    fun clearResult(){if(!_state.value.busy){
+        permissionPending=null
+        _state.value.result?.staged?.delete()
+        _state.update{it.copy(result=null,error=null,downloadPermissionRequest=null)}
+    }}
     fun requestCancel(){cancel.set(true);_state.update{it.copy(stage="正在等待安全取消点…")}}
     fun pick(slot: DocSlot,uri: Uri){
         if(_state.value.busy)return
@@ -143,15 +153,73 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
             try{
                 val result=withContext(Dispatchers.IO){
                     val ctl=control(currentCoroutineContext())
-                    process(s,capacityOnly,ctl){staged=it}
+                    val processed=process(s,capacityOnly,ctl){staged=it}
+                    if(s.operation==Operation.RESTORE && !capacityOnly)
+                        publishRestored(processed.copy(restored=true),ctl) else processed
                 }
                 currentCoroutineContext().ensureActive()
-                _state.update{it.copy(result=result,busy=false,stage="完成",password="",confirmation="")};delivered=true
+                deliverResult(result);delivered=true
             }catch(_: CancellationException){throw CancellationException()}
             catch(e: Exception){_state.update{it.copy(busy=false,error=if(e is StegException)e.message else "操作失败：请检查文件访问权限、存储空间及输入格式。",stage="未完成")}}
             finally{if(!delivered)staged?.delete();_state.update{it.copy(busy=false,password="",confirmation="",resourceAcknowledged=false)}}
         }
     }
+    /** Both authentication and private staging have succeeded before any public file is created. */
+    private fun publishRestored(r:JobResult,ctl:Control):JobResult {
+        val file=r.staged ?: throw StegException("没有可保存的恢复文件。")
+        var mime=r.mime
+        return try{
+            ctl.check()
+            mime=RestoredFileActions.mimeFor(file,r.filename)
+            val saved=downloads.save(file,r.suggestedName,mime,r.outputHash,ctl)
+            // save() returns only after commit. A late cooperative cancel cannot undo success.
+            r.copy(title="已恢复并保存",message="已保存到下载文件夹。点击“打开文件”，选择你习惯的应用查看。",
+                mime=saved.mime,download=saved,exportedUri=saved.uri,at=now(),downloadIssue=null,needsStoragePermission=false)
+        }catch(e:CancellationException){throw e}
+        catch(e:Exception){
+            val issue=when(e){
+                is DownloadPermissionException->e.message ?: "需要存储权限才能保存到 Download。"
+                is CancelledException->"已取消保存。恢复内容已经认证，可直接重试，无需重新输入口令。"
+                else->"恢复内容已经认证，但尚未保存到 Download。请重试或选择其他位置。"+
+                    (if(e is StegException) "\n${e.message}" else "请检查可用空间和保存权限。")
+            }
+            r.copy(title="已恢复，尚未保存",message="已恢复内容暂存在应用私有区；清空结果或重新启动应用会移除这份临时内容。",
+                mime=mime,download=null,exportedUri=null,downloadIssue=issue,needsStoragePermission=e is DownloadPermissionException)
+        }
+    }
+    private fun deliverResult(result:JobResult){
+        permissionPending=null
+        val token=if(result.needsStoragePermission)++permissionSequence else null
+        if(token!=null)permissionPending=token to result
+        _state.update{it.copy(result=result,busy=false,error=result.downloadIssue,
+            stage=if(result.downloadIssue==null)"完成" else "等待保存",password="",confirmation="",downloadPermissionRequest=token)}
+    }
+    fun consumeDownloadPermissionRequest(token:Long){
+        if(_state.value.downloadPermissionRequest==token)_state.update{it.copy(downloadPermissionRequest=null)}
+    }
+    fun onDownloadPermissionResult(token:Long,granted:Boolean){
+        val pending=permissionPending ?: return
+        if(pending.first!=token)return
+        permissionPending=null
+        if(_state.value.result!==pending.second || _state.value.busy)return
+        _state.update{it.copy(downloadPermissionRequest=null)}
+        if(granted)saveRestoredToDownloads()
+        else _state.update{it.copy(error="未获得保存权限。已恢复内容仍可重试；也可选择其他位置保存，无需重新输入口令。")}
+    }
+    fun saveRestoredToDownloads(){
+        val r=_state.value.result ?: return
+        if(!r.restored || r.staged==null || r.exportedUri!=null || _state.value.busy || _state.value.selecting)return
+        permissionPending=null;cancel.set(false)
+        _state.update{it.copy(busy=true,error=null,stage="保存到下载文件夹",downloadPermissionRequest=null)}
+        job=viewModelScope.launch {
+            try{
+                val saved=withContext(Dispatchers.IO){publishRestored(r,control(currentCoroutineContext()))}
+                currentCoroutineContext().ensureActive()
+                deliverResult(saved)
+            }finally{_state.update{it.copy(busy=false)}}
+        }
+    }
+    fun reportOpenFailure(message:String){if(!_state.value.busy)_state.update{it.copy(error=message)}}
     private fun process(s: UiState,capacityOnly: Boolean,ctl: Control,onStaged: (File)->Unit): JobResult {
         ctl.check()
         val observed=memoryReader()
@@ -320,7 +388,10 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
                     docs.validateStaged(file,expected,ctl)
                     docs.export(file,uri,r.protectedUris,expected,ctl)
                 }
-                _state.update{it.copy(busy=false,result=r.copy(title="已保存并回读校验",exportedUri=uri),stage="完成")}
+                permissionPending=null
+                _state.update{it.copy(busy=false,result=r.copy(title="已保存并回读校验",exportedUri=uri,download=null,
+                    message=if(r.restored)"已保存到你选择的位置，点击“打开文件”选择应用查看。" else r.message,
+                    downloadIssue=null,needsStoragePermission=false),stage="完成",downloadPermissionRequest=null)}
             }catch(_: CancellationException){throw CancellationException()}
             catch(e: Exception){_state.update{it.copy(busy=false,error=if(e is StegException)e.message else "无法完成导出，请检查文档提供方与存储空间。")}}
             finally{_state.update{it.copy(busy=false)}}
