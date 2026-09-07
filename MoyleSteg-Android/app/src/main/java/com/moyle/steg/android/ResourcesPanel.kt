@@ -95,11 +95,11 @@ internal fun resourceSize(bytes:Long):String=when {
 @Composable
 internal fun DocumentProbeLabel(probe:DocumentProbe){
     val colors=MaterialTheme.colorScheme
-    val format=when(probe.format){"png"->"PNG";"gif"->"GIF";"saes"->"SAES";else->"普通文件／未识别容器"}
+    val format=when(probe.format){"png"->"PNG";"jpeg"->"JPG / JPEG";"gif"->"GIF";"saes"->"SAES";else->"普通文件／未识别容器"}
     Column(verticalArrangement=Arrangement.spacedBy(4.dp)){
         Text("按文件内容识别：$format",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
         if(probe.width!=null && probe.height!=null)
-            Text("文件头尺寸：${probe.width} × ${probe.height} px",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
+            Text("${if(probe.format=="jpeg")"照片显示尺寸"else "文件头尺寸"}：${probe.width} × ${probe.height} px",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
         Text("报告大小：${probe.size?.let(::resourceSize) ?: "提供方未报告"}",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
         Text("仅为文件头信息，尚未完成格式验证或认证；不依据后缀、相册缩略图判断。",style=MaterialTheme.typography.bodySmall,color=colors.onSurfaceVariant)
     }

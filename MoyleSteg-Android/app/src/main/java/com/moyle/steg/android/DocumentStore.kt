@@ -10,6 +10,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.ByteArrayInputStream
+import java.io.SequenceInputStream
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
@@ -61,7 +63,7 @@ class DocumentStore(
         return query(arrayOf(OpenableColumns.SIZE,DocumentsContract.Document.COLUMN_LAST_MODIFIED))
             ?: query(arrayOf(OpenableColumns.SIZE)) ?: InputMetadata(null,null)
     }
-    /** Read at most 54 bytes, without allocating pixels or trusting the filename suffix. */
+    /** Fixed headers use 54 bytes; JPEG scans at most 1 MiB, never allocating pixels. */
     fun probe(doc: PickedDocument,control: Control): DocumentProbe {
         control.check()
         val size=metadata(doc.uri).size
@@ -76,13 +78,21 @@ class DocumentStore(
                     if(n==0)throw StegException("文档提供方返回了无法继续的读取结果。")
                     count+=n
                 }
+                if(count>=3 && JpegCarrier.isJpeg(header)) {
+                    val info=JpegCarrier.probe(SequenceInputStream(ByteArrayInputStream(header,0,count),input),control)
+                    return DocumentProbe(size,"jpeg",info?.width,info?.height)
+                }
             }
             control.check()
-            return probeBytes(header,size,count)
+            return probeBytes(header,size,count,control)
         } finally { header.fill(0) }
     }
     /** Reuse the header parser on the exact captured bytes, without another provider read. */
-    internal fun probeBytes(header:ByteArray,size:Long?=header.size.toLong(),count:Int=minOf(54,header.size)):DocumentProbe {
+    internal fun probeBytes(header:ByteArray,size:Long?=header.size.toLong(),count:Int=minOf(54,header.size),control:Control=Control()):DocumentProbe {
+            if(count>=3 && JpegCarrier.isJpeg(header)) {
+                val info=JpegCarrier.probe(ByteArrayInputStream(header),control)
+                return DocumentProbe(size,"jpeg",info?.width,info?.height)
+            }
             fun prefix(bytes: ByteArray): Boolean = count>=bytes.size && bytes.indices.all { header[it]==bytes[it] }
             val png=prefix(byteArrayOf(-119,80,78,71,13,10,26,10))
             val gif=prefix("GIF87a".toByteArray(Charsets.US_ASCII)) || prefix("GIF89a".toByteArray(Charsets.US_ASCII))

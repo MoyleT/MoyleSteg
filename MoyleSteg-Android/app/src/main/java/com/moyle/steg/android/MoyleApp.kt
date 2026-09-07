@@ -38,7 +38,7 @@ fun MoyleApp(vm: MoyleViewModel) {
     val savePng=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/png")){uri->if(uri!=null)vm.export(uri)}
     val saveGif=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/gif")){uri->if(uri!=null)vm.export(uri)}
     val saveBinary=rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")){uri->if(uri!=null)vm.export(uri)}
-    fun select(next: DocSlot){slot=next.name;picker.launch(if(next==DocSlot.COVER)arrayOf("image/png","image/gif")else arrayOf("*/*"))}
+    fun select(next: DocSlot){slot=next.name;picker.launch(if(next==DocSlot.COVER)arrayOf("image/png","image/jpeg","image/gif")else arrayOf("*/*"))}
     BackHandler(s.busy){vm.requestCancel()}
     MoyleTheme(s.theme,s.largeText){
         val c=MaterialTheme.colorScheme
@@ -62,7 +62,7 @@ fun MoyleApp(vm: MoyleViewModel) {
                     item {
                         Text(when(s.page){0->"把秘密藏进\n一张图片";1->"找回属于你的文件";2->"密钥与文件工具";else->"你的工坊"},style=MaterialTheme.typography.headlineLarge)
                         Spacer(Modifier.height(6.dp))
-                        Text("0.3.0-alpha · 重要文件请保留独立备份。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
+                        Text("0.3.1-alpha · 重要文件请保留独立备份。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                     }
                     if(s.page==3){
                         item{Section("外观"){
@@ -76,6 +76,7 @@ fun MoyleApp(vm: MoyleViewModel) {
                             Text("独立 SAES 加密、恢复与只读验证支持最高 1 GiB 原文件，使用固定大小缓冲；仍需足够临时磁盘和口令派生内存。")
                             Text("PNG／GIF 的秘密文件上限 32 MiB、完整容器上限 128 MiB、像素上限 1 亿，仍受本次内存预算约束。这些是处理上限，不保证所有手机都能处理到上限。",style=MaterialTheme.typography.bodySmall)
                             Text("支持非交错的 8 位 RGB／RGBA PNG，包括桌面 1.4.1 的标准输出。灰度、调色板、16 位、交错与动画 PNG 会被明确拒绝。",style=MaterialTheme.typography.bodySmall)
+                            Text("JPG／JPEG 照片可作为新载体，按照片方向校正后输出 PNG；原 JPG 不变，成品不复制照片的 EXIF／GPS。",style=MaterialTheme.typography.bodySmall)
                             Text("GIF 保持原动画，使用标准扩展块装载密文，不是像素隐写。最多 500 帧、画布像素 × 帧数最多 1 亿，成品仍受容器及内存预算限制。GIF 互通需电脑版 1.5.0 或更新版。",style=MaterialTheme.typography.bodySmall)
                             Text("不要通过截图、裁剪、缩放或转换格式来修复隐写图。隐写并不保证不可检测。",style=MaterialTheme.typography.bodySmall)
                         }}
@@ -102,15 +103,15 @@ fun MoyleApp(vm: MoyleViewModel) {
                             }}
                         }else{
                             item{Section("01 / 选择文件"){
-                                if(s.operation==Operation.HIDE)DocumentField("PNG／GIF 载体",s.cover,!s.busy,probe=s.coverProbe){select(DocSlot.COVER)}
+                                if(s.operation==Operation.HIDE)DocumentField("JPG／PNG／GIF 载体",s.cover,!s.busy,probe=s.coverProbe){select(DocSlot.COVER)}
                                 DocumentField(if(s.operation in listOf(Operation.HIDE,Operation.ENCRYPT))"秘密文件"else "PNG／GIF／SAES 容器",s.input,!s.busy,probe=s.inputProbe){select(DocSlot.INPUT)}
                                 if(s.operation==Operation.ENCRYPT)Text("独立 SAES 支持最高 1 GiB 原文件，不需要图片载体；成品保持电脑版兼容格式。接收端仍需允许相应的恢复预算。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                                 if(s.operation==Operation.HIDE){
                                     Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.CenterVertically){
-                                        Text("PNG 容量不足时自动扩容",modifier=Modifier.weight(1f))
+                                        Text("PNG 成品容量不足时自动扩容",modifier=Modifier.weight(1f))
                                         Switch(checked=s.autoExpand,onCheckedChange=vm::autoExpand,enabled=!s.busy)
                                     }
-                                    Text("按原图比例放大后再隐藏，原载体不变。容量足够时保持原尺寸；超出预算可使用独立 SAES。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
+                                    Text("JPG／JPEG 照片输出为 PNG；先校正照片方向，再按需扩容和隐藏。容量足够时保持显示尺寸，原载体不变；超出预算可使用独立 SAES。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                                     Text("GIF 保留原动画，无需扩容；密文扩展可被识别或在重编码时删除，请按文件发送。下方预检会自动识别格式。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)
                                     OutlinedButton(onClick={vm.run(capacityOnly=true)},enabled=!s.busy && !s.selecting && s.input!=null && s.cover!=null,modifier=Modifier.fillMaxWidth().heightIn(min=48.dp)){Text("检查实际容量")}
                                     Text("先检查容量，再设置保护方式。预览或相册缩略图不会用作隐写输入。",style=MaterialTheme.typography.bodySmall,color=c.onSurfaceVariant)

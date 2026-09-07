@@ -1,0 +1,12 @@
+name	width	height	key_png	password_png
+normal	144	96	normal_key.png	normal_password.png
+progressive	144	96	progressive_key.png	progressive_password.png
+grayscale	144	96	grayscale_key.png	grayscale_password.png
+exif-1	144	96	exif-1_key.png	exif-1_password.png
+exif-2	144	96	exif-2_key.png	exif-2_password.png
+exif-3	144	96	exif-3_key.png	exif-3_password.png
+exif-4	144	96	exif-4_key.png	exif-4_password.png
+exif-5	96	144	exif-5_key.png	exif-5_password.png
+exif-6	96	144	exif-6_key.png	exif-6_password.png
+exif-7	96	144	exif-7_key.png	exif-7_password.png
+exif-8	96	144	exif-8_key.png	exif-8_password.png

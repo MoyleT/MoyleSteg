@@ -1,10 +1,10 @@
 # Moyle 隐写工坊 · Steganography Studio
 
-把秘密藏进图片或动图。支持 Windows 和 Android 的本地文件加密与恢复工具，提供 PNG 隐写、GIF 动画载体、独立 SAES、口令和密钥文件，以及三种主题。
+把秘密藏进图片或动图。支持 Windows 和 Android 的本地文件加密与恢复工具，提供 JPG 照片载体 → PNG 成品、PNG 隐写、GIF 动画载体、独立 SAES、口令和密钥文件，以及三种主题。
 
-Local encrypted steganography and file recovery for Windows and Android: PNG, animated GIF, standalone SAES, password/key-file protection and three themes.
+Local encrypted steganography and file recovery for Windows and Android: JPEG photo carriers → PNG output, animated GIF, standalone SAES, password/key-file protection and three themes.
 
-**[Windows 1.5.1 下载](https://github.com/MoyleT/MoyleSteg/releases/tag/v1.5.1)** · **[Android 0.3.0-alpha 下载](https://github.com/MoyleT/MoyleSteg/releases/tag/android-v0.3.0-alpha)**
+**[Windows 1.5.1 下载](https://github.com/MoyleT/MoyleSteg/releases/tag/v1.5.1)** · **[Android 0.3.1-alpha 下载](https://github.com/MoyleT/MoyleSteg/releases/tag/android-v0.3.1-alpha)**
 
 ![星夜 · 深邃蓝紫](docs/screenshots/theme-midnight.png)
 
@@ -13,7 +13,7 @@ Local encrypted steganography and file recovery for Windows and Android: PNG, an
 | 平台 | 当前版本 | 安装与说明 |
 |---|---|---|
 | Windows x64 | 1.5.1 | 下载 `MoyleSteg-1.5.1-Windows-Portable.zip`，完整解压后打开 `MoyleSteg.exe`。保留 `_internal` 文件夹。 [桌面说明](README_DESKTOP.md) |
-| Android 8.0+ | 0.3.0-alpha | 下载 `MoyleSteg-Android-0.3.0-alpha-debug.apk`。当前为调试签名预发布版本。 [手机说明](MoyleSteg-Android/README.md) |
+| Android 8.0+ | 0.3.1-alpha | 下载 `MoyleSteg-Android-0.3.1-alpha-debug.apk`。当前为调试签名预发布版本。 [手机说明](MoyleSteg-Android/README.md) |
 
 Windows 的完整工程包另含源码和便携运行目录。Android 的 Source ZIP 包含可构建工程。GitHub 自动生成的 Source code ZIP 包含两端源码，不包含 EXE 或 APK。
 
@@ -22,7 +22,8 @@ Windows portable releases include Python and dependencies; extract the whole dir
 ## 本轮变化 / Changes
 
 - **Windows 1.5.1**：改善 Python 像素计算期间的界面响应。无效路径、容量不足、失败、取消及容量预检后保留口令，成功时只清理本次使用页，关闭时清理全部。口令不写入设置或日志。
-- **Android 0.3.0-alpha**：独立 SAES 加密、恢复、只读验证与导出采用分块文件处理，原文件最多 1 GiB；加入自动／手动内存预算及真实文件头尺寸提示。
+- **Android 0.3.1-alpha**：新增 JPG／JPEG 照片作载体，输出 PNG；创建时应用 EXIF 八方向，支持实际容量预检和自动扩容。JPEG 解码前检查像素与内存预算，转换后及时释放图像缓冲。
+- **手机已有能力**：独立 SAES 原文件最多 1 GiB；自动／手动内存预算、文件头尺寸提示、GIF、PNG 和三主题继续保留。
 - **GIF**：两端都能使用动画载体，保留原动画块。Windows 1.5.1 已包含 1.5.0 的 GIF 支持；GIF 使用标准应用扩展封装密文，不能据此声称无法检测。
 - **已有功能**：认证后按原名与格式恢复、PNG 自动扩容、实际容量预检、两种 SHA-256、协作式取消与三主题继续保留。
 
@@ -40,18 +41,23 @@ Android's **1 GiB limit applies to standalone SAES**. PNG/GIF remain limited to 
 
 ## 验证范围 / Validation
 
-| 本次版本记录 | 结果 |
+| 当前版本验证记录 | 结果 |
 |---|---|
-| Windows 完整源码回归（Qt offscreen） | 692 项通过 |
-| Windows 源码、冻结 EXE 原生自检 | 各 65 项通过 |
-| Android SAES 流式回归 | 30 项通过 |
-| Android Robolectric 主机流程与资源策略 | 70 项通过 |
-| 1 GiB 合成随机 SAES | 128 MiB JVM 堆下，密钥模式完整往返与验证通过 |
-| 新旧格式跨端补充矩阵 | 32 项通过 |
+| Android 主机／Robolectric 测试 | 100 项通过，含 23 项 JPEG 解码、6 项 JPEG ViewModel 流程及 1 项互通矩阵测试 |
+| JPEG 载体双向合成互通 | Windows→Android 主机 22 组；Android 主机→Windows 22 组，均通过 |
+| Windows JPEG 界面流程（Qt offscreen） | 14 项通过：普通、渐进式、灰度和 EXIF 八方向，以及文件选择器 |
+| Kotlin core:check | 通过，新增 14 项已解码像素入口检查；保留 PNG／GIF／SAES 回归 |
+| 原有 Kotlin→Python 互通 | 16 组 PNG／SAES、2 组扩容 PNG、2 组 GIF 通过 |
+| Android APK、测试 APK、lint | 构建通过；lint 0 错误、8 警告 |
 
-以上是维护方合成数据验证，计数不相加。Android 主机/JVM 测试不是手机速度或真实 Compose、图库、系统文件选择器验收；本轮未执行 Android 真机或模拟器测试。Windows 流畅度改进也不保证所有同步计算无延迟。
+以上是维护方合成数据验证，计数不相加。Android 主机测试不是手机实际运行，本版未执行真机或模拟器测试。
+Windows 1.5.1 的完整回归、EXE 自检和 Android 0.3.0 的 1 GiB 受限 JVM 实验保留在历史版本报告中，不作为本版重新运行的结果。
+JPEG 主图通过 Android 平台解码器处理；成品不复制 EXIF／GPS。恢复和验证已有容器时不经过 Bitmap 转换。
 
-[Windows 更新与验证](docs/RELIABILITY_1.5.1.md) · [Android 验证](MoyleSteg-Android/verification/TEST_REPORT_0_3_0.md) · [手机资源边界](MoyleSteg-Android/docs/LARGE_FILES_0_3_0.md) · [GIF 协议](docs/GIF_1.5.0.md)
+用户报告：微信二次保存显示 0×0，但可以恢复；QQ 勾选原图发送后尺寸和恢复均正常。这是用户的对照测试，维护方未独立复测，
+也不保证聊天软件所有版本或发送方式都会保留字节。具体说明见 [JPG 载体与相册说明](MoyleSteg-Android/docs/JPEG_CARRIER_0_3_1.md)。
+
+[Windows 更新与验证](docs/RELIABILITY_1.5.1.md) · [Android 验证](MoyleSteg-Android/verification/TEST_REPORT_0_3_1.md) · [手机资源边界](MoyleSteg-Android/docs/LARGE_FILES_0_3_0.md) · [GIF 协议](docs/GIF_1.5.0.md)
 
 ## 三种主题 / Three themes
 

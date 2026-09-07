@@ -10,8 +10,8 @@ android {
         applicationId = "com.moyle.steg.android"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.3.0-alpha"
+        versionCode = 6
+        versionName = "0.3.1-alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     sourceSets.getByName("androidTest").assets.srcDir("../core/src/test/resources")
@@ -29,6 +29,7 @@ android {
 }
 kotlin { compilerOptions.jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 dependencies {
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation(project(":core"))
     implementation(platform("androidx.compose:compose-bom:2025.11.01"))
     implementation("androidx.activity:activity-compose:1.11.0")

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "project": "MoyleSteg-Android",
-  "version": "0.3.0-alpha",
+  "version": "0.3.1-alpha",
   "kind": "public-source",
-  "file_count": 160,
+  "file_count": 214,
   "scope": "Source, public documentation and synthetic test evidence. This manifest excludes itself and SHA256SUMS.txt; SHA256SUMS.txt also covers this manifest.",
   "files": [
     {
@@ -23,23 +23,28 @@
     },
     {
       "path": "README.md",
-      "bytes": 14212,
-      "sha256": "ea611ed6bc0ad2414acd7efd637f87499c8e1596d767a77c116ef20b9eb7abd1"
+      "bytes": 14978,
+      "sha256": "1d063f207216e23d21bb7910e11ee6c13eaa3bb081e5218f2ffb7831815002a2"
     },
     {
       "path": "THIRD_PARTY.md",
-      "bytes": 1129,
-      "sha256": "1f55e8611a4420a3bc4a1c24df630d1400d413dfea61e976f68ee1fedc4cd4bb"
+      "bytes": 1411,
+      "sha256": "f53deb81d0e414c0056b6f7a7b0799b37b0a4a95d34b8ac8e0038e47b30088c0"
     },
     {
       "path": "app/build.gradle.kts",
-      "bytes": 2418,
-      "sha256": "5b627d2570f17e953d296145ac1c0b65c8b18f03b499bdd31ad9594f0382876b"
+      "bytes": 2483,
+      "sha256": "cd8b06cd32b830fa8392d5a0f343b0a885e6a5ecd9b90163642fdc6f654caaf7"
     },
     {
       "path": "app/src/androidTest/java/com/moyle/steg/android/DeviceInteropTest.kt",
       "bytes": 1480,
       "sha256": "e04aa345e6ab95434dd839221de5293675cb07a15427582c1c1422da56d73c0a"
+    },
+    {
+      "path": "app/src/androidTest/java/com/moyle/steg/android/DeviceJpegCarrierTest.kt",
+      "bytes": 2276,
+      "sha256": "06e3f779070f4e44516a91a9efb0a5f64f98afa4969d4fd86e6a73055bfda75f"
     },
     {
       "path": "app/src/androidTest/java/com/moyle/steg/android/DeviceLargeFileTest.kt",
@@ -48,8 +53,8 @@
     },
     {
       "path": "app/src/androidTest/java/com/moyle/steg/android/UiSmokeTest.kt",
-      "bytes": 1516,
-      "sha256": "1167f820656c8dc4d0e86a622e2cb66e58fb9b1ff2b0f13d12b4825b50b86219"
+      "bytes": 1522,
+      "sha256": "acc61e7221883c3372c002803a7e0ffe96981b12e01b4d06d0ce949de97173cd"
     },
     {
       "path": "app/src/main/AndroidManifest.xml",
@@ -58,8 +63,13 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/DocumentStore.kt",
-      "bytes": 15035,
-      "sha256": "20114341e324a7ce756510b9f15103822aa1a3c4a2489065671beb5f8f6bd0d3"
+      "bytes": 15642,
+      "sha256": "11a69ddd08c635a78714c67ac48aef44e2b55991687e58e4939d42b9371ce2e2"
+    },
+    {
+      "path": "app/src/main/java/com/moyle/steg/android/JpegCarrier.kt",
+      "bytes": 13051,
+      "sha256": "b5aa4fc0f5598190b8e128e836b28f9cd15c909179960f081f662c2ee4b43978"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MainActivity.kt",
@@ -68,13 +78,13 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MemoryBudget.kt",
-      "bytes": 4200,
-      "sha256": "25c8975f1cdd9dfac8c97e5f3dfc412088cc61c66f55314a9097cf6fc8673f1b"
+      "bytes": 4358,
+      "sha256": "4acd22099f9b58b01ab6022aa45d1d6dd8ef2ede7a0d06b22cb459c46afacf83"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleApp.kt",
-      "bytes": 19440,
-      "sha256": "6feca8bacdafe58b35e86198418ff6555ddbea7ae81d9ae3e90a13ad2054186a"
+      "bytes": 19724,
+      "sha256": "f204bb7d142948bc562715a37d820da9af601b4f6e023be631134d7163f9aadd"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleTheme.kt",
@@ -83,13 +93,13 @@
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/MoyleViewModel.kt",
-      "bytes": 22589,
-      "sha256": "36071f76f1ce6ee06a6443c5ad6b8a840cb12dae45dcfbbdb201e39bc781c88b"
+      "bytes": 23858,
+      "sha256": "8fdcacafec34896a3668b0348ef2a4c33649fb8eff5eaad6b29140a316bdb287"
     },
     {
       "path": "app/src/main/java/com/moyle/steg/android/ResourcesPanel.kt",
-      "bytes": 7228,
-      "sha256": "f288a29191d6113020f6a1c45d836dae8fd0f6cd35b63bcdc55c761595e5e946"
+      "bytes": 7303,
+      "sha256": "ccdce996df6c56a9b435429ecade6c816ad80efbbee23be971dc4cc51b70f8e9"
     },
     {
       "path": "app/src/main/res/drawable/ic_moyle.xml",
@@ -120,6 +130,21 @@
       "path": "app/src/test/java/com/moyle/steg/android/GifViewModelTest.kt",
       "bytes": 6042,
       "sha256": "efdb6ad50c4eb8b7d0863bda01fa0dcb0b165ed985ef9078c6e7c0809a7c107b"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/JpegCarrierTest.kt",
+      "bytes": 9926,
+      "sha256": "ff3e5440550933981723d6002ab67fbe5f22762bfec5537becf43d53e636c00f"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/JpegInteropTest.kt",
+      "bytes": 3055,
+      "sha256": "6428aac7070e46f202daf5069993c492c9c0450db04625c1770804a87125e4e7"
+    },
+    {
+      "path": "app/src/test/java/com/moyle/steg/android/JpegViewModelTest.kt",
+      "bytes": 7263,
+      "sha256": "8c7d40e031fc7045e17d7bcf79e56de2e8568c392b0ee67c1b8a56bc5de40425"
     },
     {
       "path": "app/src/test/java/com/moyle/steg/android/LargeDocumentStoreTest.kt",
@@ -158,8 +183,8 @@
     },
     {
       "path": "core/build.gradle.kts",
-      "bytes": 4524,
-      "sha256": "1fb30dd7fa23ee560ec7f2675129d6c44fda7eb5a8463b241ee3f330e4c78c0c"
+      "bytes": 4818,
+      "sha256": "145f71f80d56a2f8b3b4d4b6aa611a678d4585008c78f6f0e33d8a765a200b3c"
     },
     {
       "path": "core/src/main/kotlin/com/moyle/steg/core/BoundedIo.kt",
@@ -213,8 +238,8 @@
     },
     {
       "path": "core/src/main/kotlin/com/moyle/steg/core/StegEngine.kt",
-      "bytes": 9403,
-      "sha256": "660e50a75ef9871a672ff90122835a9bf140d53015bfc67adfddcf37f8c19557"
+      "bytes": 10812,
+      "sha256": "1cf49cf8bb1bd26d914ddad346c924359601811594a307ea4ec518c0a9fb436a"
     },
     {
       "path": "core/src/main/kotlin/com/moyle/steg/core/StreamGcm.kt",
@@ -260,6 +285,11 @@
       "path": "core/src/test/kotlin/com/moyle/steg/core/ImageMemoryRegression.kt",
       "bytes": 6438,
       "sha256": "6ad4545356b1de84c402c6e250247c7485f43f68ce658dcfe97b60e67c8535a5"
+    },
+    {
+      "path": "core/src/test/kotlin/com/moyle/steg/core/PixelCarrierRegression.kt",
+      "bytes": 2603,
+      "sha256": "843985166e13ce8815f8524e6db70da052e02ab565ff1824e3e392487935777f"
     },
     {
       "path": "core/src/test/kotlin/com/moyle/steg/core/PngMemoryRegression.kt",
@@ -512,6 +542,216 @@
       "sha256": "45a94f83e237036d0aaebda037696cd4274c073b02677daebfc126f9b9b1c8fc"
     },
     {
+      "path": "core/src/test/resources/jpeg/README.md",
+      "bytes": 998,
+      "sha256": "6980f1146e95c08207e1fc4b6e68265f34309ba6ed4532191809ed02882b9daf"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-1.jpg",
+      "bytes": 2512,
+      "sha256": "c6c4c712e3147dcfecdac0f68da71913f0a61a1bd7e436f6fdc1718f95b664c5"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-2.jpg",
+      "bytes": 2512,
+      "sha256": "5c9c5473e49fe65a76645a4e1d5a76fa7ccc9f76f88a094b920083bbc9e5175e"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-3.jpg",
+      "bytes": 2512,
+      "sha256": "bdf1cfc872d99df1ac441b2bee238d01e04dd1fdae5491611e4b6a86551e18b4"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-4.jpg",
+      "bytes": 2512,
+      "sha256": "54322f053fbe95efffad638c1289974c630649dcf3a663190ea314f77d5bac11"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-5.jpg",
+      "bytes": 2512,
+      "sha256": "46d1e1205f55f7b52cb23dc91ba6d94bc6f8de3668908868190e92224ce2a874"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-6.jpg",
+      "bytes": 2512,
+      "sha256": "c1a3aca5a19f59aa9082d2066f59db3489a62ede33923cbdf0a5f033d75e1074"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-7.jpg",
+      "bytes": 2512,
+      "sha256": "665a4e1055e198559dc774c71065d2e78b4f07501bb46305ca1b6e0137a7de2d"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/exif-8.jpg",
+      "bytes": 2512,
+      "sha256": "1257ce534d1bccca17d40d8132e0c19a8a989b17e8cf25c07196a1d2daa7863a"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/grayscale.jpeg",
+      "bytes": 1427,
+      "sha256": "80939e1f0011d730b9c42b1b626a10752b8e4e9ce9ad79f1bd66d732f9b81bc1"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/README.md",
+      "bytes": 1417,
+      "sha256": "bc72646340f03c5856d66c6ef1946e49cacefec97442069fe0db14cf754399fa"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/cases.tsv",
+      "bytes": 614,
+      "sha256": "1f8237a379fe0bd6c3c53831e253eb4e4207657db577a730df9d25e22013fd69"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-1_key.png",
+      "bytes": 9774,
+      "sha256": "019251ef2b7372ad38d43433a2d56731c9130983fc4b41601d0dca1dbbe1beec"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-1_password.png",
+      "bytes": 9916,
+      "sha256": "576aa62cf754486e9924220ce7b92967b51d46c7ca4f4a95a85e1f39bab8d474"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-2_key.png",
+      "bytes": 9912,
+      "sha256": "ee09fd6fa429876d32ce4ed5df503c356c07a0d3ac847cb0d7ebcd2d957100ab"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-2_password.png",
+      "bytes": 9847,
+      "sha256": "265cd472933566e13245bed2ebc3ac6cd6d2c4cafc5a86219f873718874dc395"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-3_key.png",
+      "bytes": 9873,
+      "sha256": "1a770e50063a36245a0325e6f3a3c484499186397093ce43d38ed2f1ab32756c"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-3_password.png",
+      "bytes": 9752,
+      "sha256": "d4159ca0d6d3b1d8c543343b3dc20371413b49f5a742b6b1e026650f4842e6b4"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-4_key.png",
+      "bytes": 9726,
+      "sha256": "05fed71f62bd37ad2fe26554a4feb7b48c68b647a9602e08a17d6b61743c6995"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-4_password.png",
+      "bytes": 9888,
+      "sha256": "a119e991acf9000e7cf5e2ef3fa38470acbb977316a2a03f5551f6b5496d7680"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-5_key.png",
+      "bytes": 10223,
+      "sha256": "af62b48ca4db96c947d5cabdc2e9fa9f0acf5fda72e6ad20e0813db396dc8e3a"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-5_password.png",
+      "bytes": 10169,
+      "sha256": "f4399b6aded5eef28b5e87513e926d9bf5fb7bff312535d3ff2393035f8f289c"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-6_key.png",
+      "bytes": 10340,
+      "sha256": "a7f0f7c52494a0b8396278cd1d4451815651f2ddd1a94a1e4a9a56c8e674523d"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-6_password.png",
+      "bytes": 10286,
+      "sha256": "c592c90d1a3ed225477d6ea49563fc216097437c4e91b3e0fad0995e64735a53"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-7_key.png",
+      "bytes": 10335,
+      "sha256": "8c45b234e950767990faca8f606e2ae433bf4224af9531ad3cc15ce2058dbeec"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-7_password.png",
+      "bytes": 10329,
+      "sha256": "27ae65a02f5ae73df6f7d73a38948da89c80e893ecea77998ea986fef954e344"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-8_key.png",
+      "bytes": 10161,
+      "sha256": "9dcee437b35189e4e94eb87f31c1e865784fc92d5022867d5a5855da9408604a"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/exif-8_password.png",
+      "bytes": 10322,
+      "sha256": "954bed46647df16a2d73892965f00448458bba23853b6d0177a980d104b92fdc"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/grayscale_key.png",
+      "bytes": 6072,
+      "sha256": "4048fc4541ed2484f4a77bab833a927ec2818dbc8024e5d21c0518ddbd9c8a61"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/grayscale_password.png",
+      "bytes": 6180,
+      "sha256": "5468b4fbcdd6c0d8fae7a2901b6d0096bc2f853806c1601919294ce29b353ca7"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/normal_key.png",
+      "bytes": 9892,
+      "sha256": "fe6c65c3e4fb7b178c4000ae2a5d0a3b98c219a876c5a3474ff7abc78e52fc3f"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/normal_password.png",
+      "bytes": 9830,
+      "sha256": "df20ae269c0ce8089501434ce42f6e17196fb9d3ea53ea8948956fa71ba28aae"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/password.txt",
+      "bytes": 28,
+      "sha256": "7f8a370c878412a41c07f39b6e084e7348aaff0aad1704d41462f7d48fa75c3e"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/progressive_key.png",
+      "bytes": 9850,
+      "sha256": "ce9af93c7bda5b4eede4b6ea75a4276174e5110185d6ad0720c018d5c839b6a2"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/progressive_password.png",
+      "bytes": 9918,
+      "sha256": "5e4dc67ee0572c6312022a63c7647eb9deb0ee974fcb29ee5bf40825e9fe0ffe"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/source.bin",
+      "bytes": 512,
+      "sha256": "110009dcee21620b166f3abfecb5eff7a873be729d1c2d53822e7acc5f34eb9b"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/interop/synthetic.stegkey",
+      "bytes": 68,
+      "sha256": "92e0200ee49ffa57c06bff1d5b3b4f7925e806dfb08df76ec8063c2825fc6662"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/normal.jpg",
+      "bytes": 2476,
+      "sha256": "ffd502082dbfea6288a9f9e2e45f072451f5457ef5867c9788c1cb5c30629816"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/orientation-6.jpg",
+      "bytes": 1486,
+      "sha256": "48c7226100159a0e17712d1ffe16fed89d423e485b19943de22d70825f92c784"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/progressive.jpeg",
+      "bytes": 2210,
+      "sha256": "00c6e3547134d96a23a632a876024a35f8a518949c46243c09a51b45af47f9fb"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/progressive.jpg",
+      "bytes": 1045,
+      "sha256": "adb25af2f0d5f6cf7fa511d6b60e0a3b657b7ae122c3ab2983bf325400a64ee1"
+    },
+    {
+      "path": "core/src/test/resources/jpeg/six-colors.jpg",
+      "bytes": 1450,
+      "sha256": "1958dde3ba5f807e22595aedd21f9e52b724e6a5a5ce70c324ba614e58d37109"
+    },
+    {
       "path": "docs/AUTO_EXPAND_0_1_2.md",
       "bytes": 3390,
       "sha256": "6b7de37ae67195aeec952e141bdb9dca303a8b96ab6dbad52be6b525d96f4933"
@@ -535,6 +775,11 @@
       "path": "docs/IMPLEMENTATION_PLAN.md",
       "bytes": 1118,
       "sha256": "806a1b881dc611c60db4f73a62ff930f16819e3380453b789a350c6770b18414"
+    },
+    {
+      "path": "docs/JPEG_CARRIER_0_3_1.md",
+      "bytes": 3322,
+      "sha256": "610affcba435c9732d84bc8a576dcd38b92c8f33109ca92e27d2a58602fce430"
     },
     {
       "path": "docs/LARGE_FILES_0_3_0.md",
@@ -592,14 +837,19 @@
       "sha256": "4c2083b36be3b32a0715d2ca46ab92e46d84d610a241f4b95620a8b75cc949b4"
     },
     {
+      "path": "tools/generate_jpeg_vectors.py",
+      "bytes": 8191,
+      "sha256": "b752b9993436d6fe660fc68946c146ea6577db96ff2a195280537de72aeaabca"
+    },
+    {
       "path": "tools/generate_vectors.py",
       "bytes": 3053,
       "sha256": "ee31714c105ba2ea65b85bcddac075d4c9bdf67f15a4c49e4ffcaddd128a03be"
     },
     {
       "path": "tools/package_source.py",
-      "bytes": 5011,
-      "sha256": "fdc9ff2fefe2d5fdcd9ccf325217fc477118fa275e5b2677cbd928f6ad09c35a"
+      "bytes": 5127,
+      "sha256": "2e1ba6b2df2ccf8be0478357bb6d46a21b5376d89f22b5783f9ae13d395a439a"
     },
     {
       "path": "tools/png_vectors.py",
@@ -623,8 +873,8 @@
     },
     {
       "path": "tools/test_core_local.py",
-      "bytes": 2915,
-      "sha256": "512824a7f46b0468189bd4cc548ec782d9d113ed2b5507e2f690e384104af243"
+      "bytes": 3048,
+      "sha256": "88b661656dcbd8e29db75be8329e1760831230fed7a135430bbce4bb36f301fd"
     },
     {
       "path": "tools/verify_autoexpand_python.py",
@@ -635,6 +885,11 @@
       "path": "tools/verify_gif_python.py",
       "bytes": 3262,
       "sha256": "b837112d9273884752a5ed95b5d81bb5251334c75fd21b281403a3db0699868e"
+    },
+    {
+      "path": "tools/verify_jpeg_python.py",
+      "bytes": 5160,
+      "sha256": "cf808a794603ada46a73c475075d8592e78ea35478793acd56d899339140254a"
     },
     {
       "path": "tools/verify_python.py",
@@ -667,6 +922,16 @@
       "sha256": "20463994f4195d6ee57722d7169d001a52215ff654807233d027ca71b4774376"
     },
     {
+      "path": "verification/0.3.1-alpha/jpeg-python.json",
+      "bytes": 9948,
+      "sha256": "a8495b2edd77897259242ac2c194afb4204c9af6264d4913266d0a3c8ea24779"
+    },
+    {
+      "path": "verification/0.3.1-alpha/validation.json",
+      "bytes": 2917,
+      "sha256": "553e105a538b21cd3b455d004e6a08652934af789bccf0c1a8f95f7d74550223"
+    },
+    {
       "path": "verification/TEST_REPORT.md",
       "bytes": 2093,
       "sha256": "aed06e8f8adadc37decffaf43b226256688aedbd01f52696a32df605b5388514"
@@ -690,6 +955,11 @@
       "path": "verification/TEST_REPORT_0_3_0.md",
       "bytes": 3977,
       "sha256": "b4f8550a2159a7b444a70dec14700acd8bd84730af96a9398dbb77ccbc923239"
+    },
+    {
+      "path": "verification/TEST_REPORT_0_3_1.md",
+      "bytes": 4444,
+      "sha256": "63b379467fe311227283b0b863e5556b921d9d7978bb057699a01ae3498cdbf8"
     },
     {
       "path": "verification/android-build-attempt.log",

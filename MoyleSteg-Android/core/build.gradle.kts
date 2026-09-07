@@ -97,3 +97,11 @@ val boundedReadRegressions = listOf("growth","copy","initial","normal","cancel")
     }
 }
 tasks.check { dependsOn(boundedReadRegressions) }
+
+val pixelCarrierRegression by tasks.registering(JavaExec::class) {
+    dependsOn(tasks.testClasses)
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("com.moyle.steg.core.PixelCarrierRegression")
+    maxHeapSize = "128m"
+}
+tasks.check { dependsOn(pixelCarrierRegression) }

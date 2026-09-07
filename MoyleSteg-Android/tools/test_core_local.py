@@ -29,3 +29,5 @@ for scenario in ['pixels','png-aes','payload-budget','payload-heap','gif-copy','
     subprocess.run(['java','-Xmx'+heap,'-cp',str(jar)+os.pathsep+str(a.bc_jar),'com.moyle.steg.core.ImageMemoryRegression',scenario],check=True)
 for scenario in ['growth','copy','initial','normal','cancel']:
     subprocess.run(['java','-Xmx64m','-cp',str(jar)+os.pathsep+str(a.bc_jar),'com.moyle.steg.core.BoundedReadMemoryRegression',scenario],check=True)
+
+subprocess.run(['java','-Xmx128m','-cp',str(jar)+os.pathsep+str(a.bc_jar),'com.moyle.steg.core.PixelCarrierRegression'],check=True)

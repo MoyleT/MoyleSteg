@@ -129,7 +129,7 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
         val s=_state.value
         if(s.manualMemory && !s.resourceAcknowledged){_state.update{it.copy(error="请在高级资源设置中确认本次手动预算。")};return}
         if(s.operation!=Operation.KEYGEN && s.input==null){_state.update{it.copy(error="请先选择输入文件。")};return}
-        if(s.operation==Operation.HIDE && s.cover==null){_state.update{it.copy(error="请先选择 PNG／GIF 载体。")};return}
+        if(s.operation==Operation.HIDE && s.cover==null){_state.update{it.copy(error="请先选择 JPG／PNG／GIF 载体。")};return}
         if(!capacityOnly && s.operation!=Operation.KEYGEN){
             if(s.useKey && s.key==null){_state.update{it.copy(error="请选择 .stegkey 密钥文件。")};return}
             if(!s.useKey && (s.password.isEmpty() || ((s.operation==Operation.HIDE || s.operation==Operation.ENCRYPT) && s.password!=s.confirmation))){
@@ -202,13 +202,19 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
         val input=docs.capture(doc,if(create)captureLimit(limits.maxPayloadBytes,copies=6)
             else captureLimit(limits.maxContainerBytes,probe),ctl)
         var cover: ByteArray?=null
+        var coverPixels: RgbaImage?=null
+        var isJpegCover=false
         try{
             if(s.operation==Operation.HIDE){
                 cover=docs.capture(s.cover ?: throw StegException("缺少载体。"),captureLimit(limits.maxContainerBytes,coverInfo,input.size.toLong()),ctl)
-                checkImage(docs.probeBytes(cover),input.size.toLong())
-            }else checkImage(docs.probeBytes(input))
+                checkImage(docs.probeBytes(cover,control=ctl),input.size.toLong())
+                // JPEG is a creation input only. Existing containers always retain their exact samples.
+                isJpegCover=JpegCarrier.isJpeg(cover)
+                if(isJpegCover)coverPixels=JpegCarrier.decode(cover,limits,ctl,input.size.toLong())
+            }else checkImage(docs.probeBytes(input,control=ctl))
             if(capacityOnly){
-                val p=engine.preflight(cover ?: throw StegException("缺少载体。"),doc.name,input,autoExpand=s.autoExpand)
+                val p=coverPixels?.let{engine.preflightPixels(it,cover!!.size,doc.name,input,autoExpand=s.autoExpand)}
+                    ?: engine.preflight(cover ?: throw StegException("缺少载体。"),doc.name,input,autoExpand=s.autoExpand)
                 if(p.format=="gif")return JobResult(if(p.fits)"GIF 预算检查通过"else "GIF 超出成品预算",doc.name,doc.name,
                     "GIF 动画：${p.frameCount} 帧 · ${p.width} × ${p.height}\n预计成品：${p.outputBytes} 字节\n原文件：${p.originalBytes} 字节\n压缩：${if(p.compressed)"是"else "否"}\n"+
                         "保留原动画，不改变尺寸。密文存储于标准扩展块，可被文件分析识别，重编码可能删除它；请按文件发送。\n"+
@@ -216,6 +222,7 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
                 val occupancy=if(p.capacityBytes==0)"无可用容量" else String.format(Locale.ROOT,"%.1f%%",p.occupancyPercent)
                 val memory=String.format(Locale.ROOT,"%.1f",p.estimatedWorkingBytes/1048576.0)
                 return JobResult(when{!p.fits->"容量不足";p.expanded->"扩容后容量足够";else->"容量足够"},doc.name,doc.name,
+                    (if(isJpegCover)"JPG → PNG · 已按照片方向校正\n"else "")+
                     "原载体：${p.originalWidth} × ${p.originalHeight}\n计划输出：${p.width} × ${p.height}\n需要扩容：${if(p.expanded)"是" else "否"}\n有效密文容量：${p.capacityBytes} 字节\n实际所需：${p.ciphertextBytes} 字节\n容量占用：$occupancy\n原文件：${p.originalBytes} 字节\n压缩：${if(p.compressed)"是" else "否"}\nPNG 工作内存估算：$memory MiB（未预留资源）\n"+
                         (if(!p.fits)"可开启自动扩容，或使用工具页的独立 SAES 加密。\n" else "")+
                         "预检不会生成成品；执行时会重新读取并检查。",preflight=p)
@@ -226,7 +233,15 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
             }else Credential.password(s.password)
             credential.use { c ->
                 if(create){
-                    val bytes=if(s.operation==Operation.HIDE)engine.hide(cover!!,doc.name,input,c,autoExpand=s.autoExpand) else engine.encrypt(doc.name,input,c)
+                    val bytes=if(s.operation==Operation.HIDE)
+                        coverPixels?.let{engine.hidePixels(it,cover!!.size,doc.name,input,c,autoExpand=s.autoExpand)}
+                            ?: engine.hide(cover!!,doc.name,input,c,autoExpand=s.autoExpand)
+                        else engine.encrypt(doc.name,input,c)
+                    // The consuming pixel API already wiped its buffer. Release its reference
+                    // before the saved PNG is decoded into a second full image for verification.
+                    coverPixels=null
+                    cover?.fill(0)
+                    cover=null
                     try{
                         val file=stage(bytes)
                         ctl.report("保存后认证验证")
@@ -239,7 +254,8 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
                         val gif=s.operation==Operation.HIDE && GifCarrier.isGif(bytes)
                         return JobResult("成品已验证，等待保存",doc.name,doc.name,
                             if(gif)"GIF 原动画已保留，隐藏内容已认证。请另存为新文件并按文件发送；重编码可能删除密文扩展。认证保护隐藏文件，不认证动画本身。"
-                            else "请通过系统文件选择器另存为新文件。请勿把隐写 PNG 作为压缩图片发送。",
+                            else (if(isJpegCover)"JPG 载体已转换为 PNG 成品；照片方向已校正，原 JPG 保持不变。\n"else "")+
+                                "请通过系统文件选择器另存为新文件。发送时保留原文件，接收后可用只读验证核对；压缩或重新编码可能破坏内容。",
                             contentHash=sha256(input),containerHash=sha256(bytes),staged=file,
                             suggestedName=when{gif->"moyle_hidden.gif";s.operation==Operation.HIDE->"moyle_hidden.png";else->"moyle_encrypted.saes"},
                             mime=when{gif->"image/gif";s.operation==Operation.HIDE->"image/png";else->"application/octet-stream"},protectedUris=protected,outputHash=sha256(bytes))
@@ -257,7 +273,7 @@ class MoyleViewModel @JvmOverloads constructor(application: Application,
                         staged=stage(decoded.data),suggestedName=suggested,protectedUris=protected,outputHash=contentHash)
                 }finally{decoded.data.fill(0)}
             }
-        }finally{input.fill(0);cover?.fill(0)}
+        }finally{input.fill(0);cover?.fill(0);coverPixels?.rgba?.fill(0)}
     }
     private fun credential(s:UiState,ctl:Control):Credential {
         if(!s.useKey)return Credential.password(s.password)

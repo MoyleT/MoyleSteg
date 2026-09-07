@@ -61,7 +61,9 @@ object MemoryPolicy {
         if(containerBytes<0 || payloadBytes<0 || width<0 || height<0)
             throw StegException("文件尺寸信息无效。")
         return try{
-            val pixelBytes=if(format=="png")Math.multiplyExact(Math.multiplyExact(width.toLong(),height.toLong()),4L) else 0L
+            // JPEG creation briefly retains both the platform Bitmap and normalized RGBA pixels.
+            val bytesPerPixel=when(format){"png"->4L;"jpeg"->8L;else->0L}
+            val pixelBytes=Math.multiplyExact(Math.multiplyExact(width.toLong(),height.toLong()),bytesPerPixel)
             listOf(Math.multiplyExact(4L,containerBytes),pixelBytes,8L*width,MIB,Math.multiplyExact(6L,payloadBytes))
                 .fold(0L){sum,part->Math.addExact(sum,part)}
         }catch(_:ArithmeticException){throw StegException("文件尺寸超过可计算的资源预算。")}

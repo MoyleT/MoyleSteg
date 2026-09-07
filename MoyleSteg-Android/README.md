@@ -1,11 +1,12 @@
-# MoyleSteg Android · 0.3.0-alpha
+# MoyleSteg Android · 0.3.1-alpha
 
 **Kotlin + Jetpack Compose 的 Android 首版源码工程。** 不使用 Python 运行时，不依赖服务器。
 PNG／SAES 保持与电脑版 1.4.1 兼容；GIF 动画载体需要电脑版 1.5.0 或后续兼容版本。
 
-> 本版增加最多 1 GiB 的 SAES 分块文件处理、自动／手动内存预算与真实文件头尺寸提示；保留 GIF、PNG 自动扩容和三主题。
+> 本版增加 **JPG／JPEG 照片作载体、输出 PNG**：支持照片方向校正、实际容量预检和自动扩容。
+> 保留最多 1 GiB 的独立 SAES 文件处理、自动／手动内存预算、GIF 和三主题。
 > 应用源码已经通过 Android 编译；最新构建、回归和设备验证边界见
-> [本版验证记录](verification/TEST_REPORT_0_3_0.md)。历史版本记录保留为基线。
+> [本版验证记录](verification/TEST_REPORT_0_3_1.md)。历史版本记录保留为基线。
 
 ## 已编写的能力
 
@@ -17,6 +18,7 @@ PNG／SAES 保持与电脑版 1.4.1 兼容；GIF 动画载体需要电脑版 1.5
 | 密钥文件导入、生成与导出 | 兼容 `.stegkey`；密钥不嵌入 PNG |
 | 全图分块密钥布局、RGB 1-LSB | 精确移植，包括 Python randbelow 的位宽规则 |
 | PNG 隐藏与恢复 | 支持下述严格的 PNG 子集；透明像素 RGB 不丢失 |
+| JPG／JPEG 照片载体 | 创建时用 Android 解码器处理主图并应用 EXIF 方向，输出现有 v1 PNG；不输出 JPEG 隐写容器 |
 | GIF 动画载体 | 保留动画原始块，标准应用扩展封装 SAES；支持预检、恢复与只读验证 |
 | 容量预检、只读验证、双摘要 | 已实现；摘要与认证使用同一捕获的字节序列 |
 | 隐藏时自动扩容 | 界面默认开启；实际压缩后规划尺寸，预算内放大后再嵌入 |
@@ -37,7 +39,9 @@ PNG／SAES 保持与电脑版 1.4.1 兼容；GIF 动画载体需要电脑版 1.5
   这不是操作系统快照；认证和完整容器摘要仍始终对应同一份捕获字节。
 - PNG 限于 **非交错、8-bit RGB（类型 2）或 RGBA（类型 6）**，支持过滤器 0–4。
   类型 2 的 tRNS 透明色已处理。支持桌面 1.4.1 标准输出的 RGBA PNG。
-- 明确拒绝调色板、灰度、16-bit、Adam7 交错、APNG。没有 JPEG/HEIC 载体转换、
+- 上述 PNG 入口明确拒绝调色板、灰度、16-bit、Adam7 交错、APNG。JPG／JPEG 仅在创建时转换，
+  先检查编码大小、图片尺寸与 Bitmap／RGBA 工作内存，再解码；成品不复制 EXIF／GPS 元数据。
+  手机平台支持的普通、渐进式、灰度 JPEG 均可作为照片载体；详见 [JPG 载体说明](docs/JPEG_CARRIER_0_3_1.md)。没有 HEIC 载体转换、
   批量、多图分片、纠错、后台续跑、生物识别保险库。
 - 自动扩容仍受上述预算限制。容量足够时保持原尺寸，不足时按比例放大，目标占用不超过 90%。
   扩容不增加画质，不改动原载体，也不作用于恢复或验证。详见 [扩容说明](docs/AUTO_EXPAND_0_1_2.md)。
@@ -144,7 +148,12 @@ py -3 .\tools\verify_gif_python.py .\core\build\gif-output
 .\gradlew.bat :app:connectedDebugAndroidTest
 ```
 
-### 0.3.0-alpha 本轮验证
+### 0.3.1-alpha 本轮验证
+
+JPG 载体、方向与资源检查、实际 ViewModel 流程、双向合成互通及构建记录见
+[0.3.1 验证报告](verification/TEST_REPORT_0_3_1.md)。Android 实机验收与主机测试分开记录。
+
+### 0.3.0-alpha 历史验证
 
 完整的主机测试、受限 JVM 大文件测试与实际设备边界见 [0.3.0 验证报告](verification/TEST_REPORT_0_3_0.md)。
 主机上的流式处理成功不等于已在 iQOO 13 上完成相同大小的文件测试。
@@ -190,7 +199,7 @@ py -3 .\tools\verify_gif_python.py .\core\build\gif-output
 
 ## 操作流程
 
-隐藏：选择支持的 PNG／GIF 和秘密文件 → 检查实际容量、动画帧数或 PNG 扩容尺寸 → 输入口令或选择密钥 → 处理 →
+隐藏：选择支持的 JPG／PNG／GIF 和秘密文件 → 检查实际容量、动画帧数或 PNG 扩容尺寸 → 输入口令或选择密钥 → 处理 →
 私有文件保存后重新认证 → 系统选择器创建新文档 → 导出并回读核对完整字节摘要。
 
 恢复：选择 PNG、GIF 或 SAES → 凭据 → 认证成功后生成私有明文成品 → 明确另存为新文档。

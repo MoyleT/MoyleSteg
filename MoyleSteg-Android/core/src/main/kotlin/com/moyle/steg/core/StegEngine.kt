@@ -46,10 +46,14 @@ class StegEngine(private val limits: Limits=Limits(),private val control: Contro
             finally { p.bytes.fill(0) }
         }
         // Parse the full PNG as well: unsupported/invalid files must not get a positive preflight.
-        val image=PngCodec.decode(cover,limits,control)
+        return preflightPixels(PngCodec.decode(cover,limits,control),cover.size,filename,data,autoExpand)
+    }
+    /** Creation only. Ownership of the decoded pixels transfers here; they are wiped on return. */
+    fun preflightPixels(image: RgbaImage,coverBytes: Int,filename: String,data: ByteArray,autoExpand: Boolean=false): Preflight {
         try {
+            admitPixels(image,coverBytes,data.size)
             val p=Payload.build(filename,data,limits,control)
-            return try{CoverExpansion.plan(image,cover.size,p.bytes.size+16,data.size,p.compressed,autoExpand,limits)}
+            return try{CoverExpansion.plan(image,coverBytes,p.bytes.size+16,data.size,p.compressed,autoExpand,limits)}
             finally{p.bytes.fill(0)}
         } finally{image.rgba.fill(0)}
     }
@@ -70,11 +74,16 @@ class StegEngine(private val limits: Limits=Limits(),private val control: Contro
                 }
             } finally { p.bytes.fill(0) }
         }
-        var image=PngCodec.decode(cover,limits,control)
+        return hidePixels(PngCodec.decode(cover,limits,control),cover.size,filename,data,credential,autoExpand)
+    }
+    /** Creation only. Consumes and wipes the pixels, and always emits the existing PNG v1 format. */
+    fun hidePixels(pixels: RgbaImage,coverBytes: Int,filename: String,data: ByteArray,credential: Credential,autoExpand: Boolean=false): ByteArray {
+        var image=pixels
         try {
+          admitPixels(image,coverBytes,data.size)
           val p=Payload.build(filename,data,limits,control)
           try{
-            val plan=CoverExpansion.plan(image,cover.size,p.bytes.size+16,data.size,p.compressed,autoExpand,limits)
+            val plan=CoverExpansion.plan(image,coverBytes,p.bytes.size+16,data.size,p.compressed,autoExpand,limits)
             demand(plan.fits,"载体容量不足；请开启自动扩容、选择更大载体，或使用独立 SAES。")
             if(plan.expanded){
                 val old=image
@@ -82,7 +91,7 @@ class StegEngine(private val limits: Limits=Limits(),private val control: Contro
                 old.rgba.fill(0)
             }
             val h=Header.create(credential.mode,Crypto.random(16),Crypto.random(12),p.bytes.size+16)
-            admitCrypto(cover.size.toLong()+data.size+image.rgba.size+p.bytes.size,h,
+            admitCrypto(coverBytes.toLong()+data.size+image.rgba.size+p.bytes.size,h,
                 "PNG ${image.width}×${image.height}（${image.width.toLong()*image.height} 像素）加密")
             control.report("派生密钥")
             Crypto.derive(credential,h).use { keys ->
@@ -99,6 +108,15 @@ class StegEngine(private val limits: Limits=Limits(),private val control: Contro
             return PngCodec.encode(image,limits,control)
           }finally{p.bytes.fill(0)}
         }finally{image.rgba.fill(0)}
+    }
+    private fun admitPixels(image: RgbaImage,coverBytes: Int,payloadBytes: Int) {
+        control.check()
+        val count=image.width.toLong()*image.height
+        demand(image.width>0 && image.height>0 && count<=limits.maxPixels && count*4==image.rgba.size.toLong(),
+            "载体像素数据无效或超过处理预算。")
+        demand(coverBytes in 0..limits.maxContainerBytes,"载体文件超过处理预算。")
+        demand(image.width.toLong()*4+1<=limits.maxPngRowBytes,"载体单行缓冲超过处理预算。")
+        MemoryChecks.requireWorking(coverBytes.toLong()+image.rgba.size+payloadBytes+MemoryChecks.BUFFER_OVERHEAD,limits,"载体像素处理")
     }
     fun extract(container: ByteArray,credential: Credential): Decoded {
         if (GifCarrier.isGif(container)) {

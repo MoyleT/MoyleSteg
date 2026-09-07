@@ -8,9 +8,13 @@ include an SDK, JDK, application dependency binaries, fonts, Python or Windows r
 Robolectric 4.16, JUnit 4.13.2 and kotlinx-coroutines-test 1.10.2 are host test
 dependencies only; they are not packaged in the normal Android application.
 
-Bouncy Castle is used only through its lightweight SCrypt API; AES-GCM and HMAC are
-obtained from JCA. No BouncyCastleProvider is registered globally. See the upstream
+Bouncy Castle supplies lightweight SCrypt and the streaming SAES GCM implementation;
+the image byte API uses JCA AES-GCM/HMAC. No BouncyCastleProvider is registered globally. See the upstream
 license: https://www.bouncycastle.org/licence.html
+
+AndroidX ExifInterface 1.4.2 (Apache-2.0) reads JPEG orientation for carrier creation.
+JPEG pixels are decoded by Android BitmapFactory; PNG recovery keeps its original
+raw-sample codec. https://developer.android.com/jetpack/androidx/releases/exifinterface
 
 `tools/reference/desktop_1_4_1.py` is the user's supplied original desktop source,
 kept unchanged for compatibility tests. Its provenance is recorded; this package

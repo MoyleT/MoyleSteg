@@ -15,7 +15,7 @@ class UiSmokeTest {
         ui.onNodeWithText("樱桃奶霜 · 浅粉").performScrollTo().performClick()
         ui.onNodeWithText("大字号").assertExists()
         ui.onNodeWithText("隐藏",useUnmergedTree=true).performClick()
-        ui.onNodeWithText("PNG／GIF 载体").assertExists()
+        ui.onNodeWithText("JPG／PNG／GIF 载体").assertExists()
     }
     @Test fun advancedMemoryControlsRemainReachable(){
         ui.onNodeWithText("设置",useUnmergedTree=true).performClick()
